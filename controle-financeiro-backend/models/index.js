@@ -19,7 +19,7 @@ const Category = require('./Category')(sequelize);
 const Objective = require('./Objective')(sequelize);
 const Card = require('./Card')(sequelize);
 const Account = require('./Account')(sequelize, Sequelize.DataTypes);
-const Invoice = require('./Invoice');
+const Invoice = require('./Invoice')(sequelize, Sequelize.DataTypes); // ✅ certo
 const MonthlyGoal = require('./MonthlyGoal')(sequelize); // ✅ Adicionado
 
 // Objeto com todos os models
