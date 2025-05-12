@@ -2,13 +2,16 @@ require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
 const sequelize = new Sequelize(
-  process.env.DB_NAME || 'controle_financeiro',
-  process.env.DB_USER || 'root',
-  process.env.DB_PASS || '',
+  process.env.DB_NAME,
+  process.env.DB_USER,
+  process.env.DB_PASS,
   {
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
-    dialect: 'mysql',
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    dialect: process.env.DB_DIALECT || 'postgres',
+    dialectOptions: {
+      ssl: process.env.DB_SSL === 'true' ? { require: true, rejectUnauthorized: false } : false,
+    },
     logging: false,
   }
 );
