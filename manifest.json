@@ -1,0 +1,16 @@
+{
+    "name": "Controle Financeiro",
+    "short_name": "Financeiro",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "description": "Gerenciador de finanças com metas, notificações e gráficos.",
+    "icons": [
+      {
+        "src": "/favicon.svg",
+        "sizes": "any",
+        "type": "image/svg+xml"
+      }
+    ]
+  }
+  
