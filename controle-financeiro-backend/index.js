@@ -62,6 +62,11 @@ sequelize.sync().then(() => {
 });
 
 // Teste de conexão com banco
-sequelize.query("CREATE TABLE IF NOT EXISTS teste_origem (id INT AUTO_INCREMENT PRIMARY KEY, info VARCHAR(255));")
+sequelize.query(`
+  CREATE TABLE IF NOT EXISTS teste_origem (
+    id SERIAL PRIMARY KEY,
+    info VARCHAR(255)
+  );
+`)
   .then(() => console.log("🧪 Tabela 'teste_origem' criada para teste."))
   .catch((err) => console.error("Erro ao criar tabela teste:", err));
