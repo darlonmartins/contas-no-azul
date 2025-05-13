@@ -6,17 +6,21 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': path.resolve(__dirname, 'src'), // ✅ Cria o alias @ para facilitar os imports
     },
   },
   server: {
-    port: 5173,
+    port: 5173, // ✅ Porta fixa para ambiente local
   },
-  // ❌ REMOVA ESSA PARTE ABAIXO
-  // build: {
-  //   rollupOptions: {
-      external: [ 'framer-motion','recharts','dayjs','date-fns'],
-    //     external: ['lucide-react', 'framer-motion','recharts','dayjs','date-fns'],
-  //   },
-  // },
+  build: {
+    rollupOptions: {
+      external: [
+
+        'framer-motion',
+        'recharts',
+        'dayjs',
+        'date-fns'
+      ],
+    },
+  },
 });
