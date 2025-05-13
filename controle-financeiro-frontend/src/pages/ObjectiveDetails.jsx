@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
-import ObjectiveDepositModal from '../components/goals/ObjectiveDepositModal'; // ✅ novo import
+import ObjectiveDepositModal from '../components/goals/ObjectiveDepositModal';
+import api from '../../services/api';
 
 const ObjectiveDetails = () => {
   const { id } = useParams();
@@ -10,17 +11,14 @@ const ObjectiveDetails = () => {
   const [objective, setObjective] = useState(null);
   const [showDepositModal, setShowDepositModal] = useState(false);
 
-  const fetchObjective = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:3001/api/goals/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setObjective(res.data);
-    } catch (err) {
-      console.error('Erro ao buscar objetivo:', err);
-    }
-  };
+const fetchObjective = async () => {
+  try {
+    const res = await api.get(`/goals/${id}`);
+    setObjective(res.data);
+  } catch (err) {
+    console.error('Erro ao buscar objetivo:', err);
+  }
+};
 
   useEffect(() => {
     fetchObjective();

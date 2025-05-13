@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import api from '../services/api';
 import axios from 'axios';
 
 const ExpenseForm = ({ onExpenseSaved }) => {
@@ -18,26 +19,24 @@ const ExpenseForm = ({ onExpenseSaved }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const token = localStorage.getItem('token');
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    try {
-      await axios.post('http://localhost:3001/api/expenses', formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      onExpenseSaved(); // callback para recarregar lista
-      setFormData({
-        description: '',
-        amount: '',
-        date: '',
-        categoryId: '',
-        installments: 1,
-      });
-    } catch (err) {
-      console.error('Erro ao salvar despesa:', err);
-    }
-  };
+  try {
+    await api.post('/expenses', formData);
+    onExpenseSaved(); // callback para recarregar lista
+    setFormData({
+      description: '',
+      amount: '',
+      date: '',
+      categoryId: '',
+      installments: 1,
+    });
+  } catch (err) {
+    console.error('Erro ao salvar despesa:', err);
+  }
+};
+
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 mb-10">

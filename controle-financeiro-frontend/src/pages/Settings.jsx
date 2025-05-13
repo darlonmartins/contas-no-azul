@@ -1,49 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import api from '../../services/api';
 
 const Settings = () => {
   const [frequency, setFrequency] = useState('mensal');
   const [loading, setLoading] = useState(false);
 
   const fetchSettings = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:3001/api/settings', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.data?.notificationFrequency) {
-        setFrequency(res.data.notificationFrequency);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar configurações:', err);
+  try {
+    const res = await api.get('/settings');
+    if (res.data?.notificationFrequency) {
+      setFrequency(res.data.notificationFrequency);
     }
-  };
+  } catch (err) {
+    console.error('Erro ao buscar configurações:', err);
+  }
+};
 
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put(
-        'http://localhost:3001/api/settings',
-        { notificationFrequency: frequency },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      alert('Frequência atualizada com sucesso!');
-    } catch (err) {
-      console.error('Erro ao atualizar frequência:', err);
-    }
-  };
+const handleUpdate = async (e) => {
+  e.preventDefault();
+  try {
+    await api.put('/settings', { notificationFrequency: frequency });
+    alert('Frequência atualizada com sucesso!');
+  } catch (err) {
+    console.error('Erro ao atualizar frequência:', err);
+  }
+};
 
-  const handleExport = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3001/api/goals/export', {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob',
-      });
+const handleExport = async () => {
+  try {
+    setLoading(true);
+    const response = await api.get('/goals/export', {
+      responseType: 'blob',
+    });
 
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);

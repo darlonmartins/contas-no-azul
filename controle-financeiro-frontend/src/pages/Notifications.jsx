@@ -1,21 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import NotificationList from '../components/notifications/NotificationList';
+import api from '../../services/api';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
 
-  const fetchNotifications = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:3001/api/notifications', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setNotifications(res.data);
-    } catch (err) {
-      console.error('Erro ao buscar notificações:', err);
-    }
-  };
+const fetchNotifications = async () => {
+  try {
+    const res = await api.get('/notifications');
+    setNotifications(res.data);
+  } catch (err) {
+    console.error('Erro ao buscar notificações:', err);
+  }
+};
 
   useEffect(() => {
     fetchNotifications();

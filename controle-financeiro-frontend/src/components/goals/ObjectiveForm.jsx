@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { toast } from 'react-toastify';
+import api from '../../services/api';
 
 const formatCurrencyInput = (value) => {
   const numeric = value.replace(/\D/g, "");
@@ -12,7 +12,13 @@ const formatCurrencyInput = (value) => {
   return formatted;
 };
 
-const ObjectiveForm = ({ onCancel, onObjectiveSaved, initialData = null }) => {
+const ObjectiveForm = (props) => {
+  const {
+    onCancel,
+    onObjectiveSaved,
+    initialData = null
+  } = props;
+
   const [name, setName] = useState(initialData?.name || '');
   const [targetValue, setTargetValue] = useState(
     initialData?.targetAmount?.toLocaleString("pt-BR", {
@@ -33,10 +39,7 @@ const ObjectiveForm = ({ onCancel, onObjectiveSaved, initialData = null }) => {
 
   const fetchCategories = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:3001/api/categories', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get('/categories');
       setCategories(res.data);
     } catch (err) {
       console.error('Erro ao buscar categorias:', err);
@@ -45,7 +48,6 @@ const ObjectiveForm = ({ onCancel, onObjectiveSaved, initialData = null }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
 
     const payload = {
       name,
@@ -58,16 +60,10 @@ const ObjectiveForm = ({ onCancel, onObjectiveSaved, initialData = null }) => {
 
     try {
       if (initialData?.id) {
-        await axios.put(
-          `http://localhost:3001/api/goals/${initialData.id}`,
-          payload,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.put(`/goals/${initialData.id}`, payload);
         toast.success('Objetivo atualizado com sucesso!');
       } else {
-        await axios.post('http://localhost:3001/api/goals', payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post('/goals', payload);
         toast.success('Objetivo cadastrado com sucesso!');
       }
 

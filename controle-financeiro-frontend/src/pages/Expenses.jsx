@@ -2,21 +2,19 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import ExpenseForm from '../components/expenses/ExpenseForm';
 import ExpenseList from '../components/expenses/ExpenseList';
+import api from '../services/api';
 
 const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
 
-  const fetchExpenses = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:3001/api/expenses', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setExpenses(res.data);
-    } catch (err) {
-      console.error('Erro ao buscar despesas:', err);
-    }
-  };
+const fetchExpenses = async () => {
+  try {
+    const res = await api.get('/expenses');
+    setExpenses(res.data);
+  } catch (err) {
+    console.error('Erro ao buscar despesas:', err);
+  }
+};
 
   useEffect(() => {
     fetchExpenses();

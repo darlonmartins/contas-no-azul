@@ -5,6 +5,7 @@ import ObjectiveList from '../components/goals/ObjectiveList';
 import ConfirmDeleteModal from '../components/ui/ConfirmDeleteModal';
 import { PlusCircle, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import api from '../../services/api';
 
 const Objectives = () => {
   const [objectives, setObjectives] = useState([]);
@@ -12,35 +13,28 @@ const Objectives = () => {
   const [editingObjective, setEditingObjective] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  const fetchObjectives = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:3001/api/goals', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setObjectives(res.data);
-    } catch (err) {
-      console.error('Erro ao buscar objetivos:', err);
-    }
-  };
+const fetchObjectives = async () => {
+  try {
+    const res = await api.get('/goals');
+    setObjectives(res.data);
+  } catch (err) {
+    console.error('Erro ao buscar objetivos:', err);
+  }
+};
 
-  useEffect(() => {
+useEffect(() => {
+  fetchObjectives();
+}, []);
+
+const handleDelete = async () => {
+  try {
+    await api.delete(`/goals/${deleteTarget}`);
+    setDeleteTarget(null);
     fetchObjectives();
-  }, []);
-
-  const handleDelete = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3001/api/goals/${deleteTarget}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setDeleteTarget(null);
-      fetchObjectives();
-    } catch (err) {
-      console.error('Erro ao excluir objetivo:', err);
-    }
-  };
-
+  } catch (err) {
+    console.error('Erro ao excluir objetivo:', err);
+  }
+};
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">

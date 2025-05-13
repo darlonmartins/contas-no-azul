@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { UserPlus, Eye, EyeOff } from 'lucide-react';
 import PublicHeader from '../components/layout/PublicHeader';
+import api from '../services/api';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ const Register = () => {
     }
 
     try {
-      await axios.post('http://localhost:3001/api/auth/register', {
+      await api.post('/auth/register', {
         name: formData.name,
         email: formData.email,
         password: formData.password,

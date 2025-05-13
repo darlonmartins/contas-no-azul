@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import PublicHeader from '../components/layout/PublicHeader';
+import api from '../services/api';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ const Login = () => {
     e.preventDefault();
 
     try {
-      const response = await axios.post('http://localhost:3001/api/auth/login', { email, password });
+      const response = await api.post('/auth/login', { email, password });
       const token = response.data.token;
 
       if (!token) {

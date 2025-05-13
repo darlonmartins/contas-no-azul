@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import api from '../../services/api';
+
 
 const ObjectiveDepositModal = ({ objective, onClose, onDepositSuccess }) => {
   const [amount, setAmount] = useState('');
@@ -19,10 +21,7 @@ const ObjectiveDepositModal = ({ objective, onClose, onDepositSuccess }) => {
 
   const fetchAccounts = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:3001/api/accounts', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get('/accounts');
       setAccounts(res.data);
     } catch (err) {
       console.error('Erro ao buscar contas:', err);
@@ -59,12 +58,10 @@ const ObjectiveDepositModal = ({ objective, onClose, onDepositSuccess }) => {
     }
 
     try {
-      await axios.post(`http://localhost:3001/api/goals/${objective.id}/deposit`, {
+      await api.post(`/goals/${objective.id}/deposit`, {
         amount: parsedAmount,
         accountId,
         date,
-      }, {
-        headers: { Authorization: `Bearer ${token}` },
       });
 
 
