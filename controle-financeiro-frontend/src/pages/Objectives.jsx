@@ -5,7 +5,7 @@ import ObjectiveList from '../components/goals/ObjectiveList';
 import ConfirmDeleteModal from '../components/ui/ConfirmDeleteModal';
 import { PlusCircle, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../../services/api';
+import api from '@/services/api';
 
 const Objectives = () => {
   const [objectives, setObjectives] = useState([]);

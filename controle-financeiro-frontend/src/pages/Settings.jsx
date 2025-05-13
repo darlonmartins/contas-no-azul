@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import api from '../../services/api';
+import api from '../services/api';
 
 const Settings = () => {
   const [frequency, setFrequency] = useState('mensal');

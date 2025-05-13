@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, PlusCircle } from 'lucide-react';
 import ObjectiveDepositModal from '../components/goals/ObjectiveDepositModal';
-import api from '../../services/api';
+import api from '@/services/api';
 
 const ObjectiveDetails = () => {
   const { id } = useParams();

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import NotificationList from '../components/notifications/NotificationList';
-import api from '../../services/api';
+import api from '@/services/api';
 
 const Notifications = () => {
   const [notifications, setNotifications] = useState([]);
