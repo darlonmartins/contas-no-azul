@@ -9,13 +9,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
     },
   },
-  server: {
-    port: 5173,
-  },
-  // ❌ REMOVA ESSA PARTE ABAIXO
-  // build: {
-  //   rollupOptions: {
-  //     external: ['lucide-react', 'framer-motion','recharts','dayjs','date-fns'],
-  //   },
-  // },
 });
