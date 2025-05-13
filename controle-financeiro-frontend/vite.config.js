@@ -14,7 +14,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['lucide-react'], // 👈 força tratar como externo no build
+      external: ['lucide-react', 'framer-motion'], // ✅ força os dois
     },
   },
 });
