@@ -17,7 +17,6 @@ export default defineConfig({
       external: [
 
         'framer-motion',
-        'recharts',
         'dayjs',
         'date-fns'
       ],
