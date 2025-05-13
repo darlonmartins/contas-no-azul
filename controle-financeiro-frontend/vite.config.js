@@ -15,7 +15,8 @@ export default defineConfig({
   // ❌ REMOVA ESSA PARTE ABAIXO
   // build: {
   //   rollupOptions: {
-  //     external: ['lucide-react', 'framer-motion','recharts','dayjs','date-fns'],
+      external: [ 'framer-motion','recharts','dayjs','date-fns'],
+    //     external: ['lucide-react', 'framer-motion','recharts','dayjs','date-fns'],
   //   },
   // },
 });
