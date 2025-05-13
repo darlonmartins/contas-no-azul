@@ -1,8 +1,9 @@
+// tailwind.config.js
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./index.html",               // ✅ necessário para detectar as classes no HTML
-    "./src/**/*.{js,jsx,ts,tsx}", // ✅ necessário para detectar as classes nos componentes
+    "./index.html",
+    "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {
