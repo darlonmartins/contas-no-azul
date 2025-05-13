@@ -14,7 +14,7 @@ export default defineConfig({
   },
   build: {
     rollupOptions: {
-      external: ['lucide-react', 'framer-motion','recharts','dayjs'], // ✅ força os dois
+      external: ['lucide-react', 'framer-motion','recharts','dayjs','date-fns'], // ✅ força os dois
     },
   },
 });
