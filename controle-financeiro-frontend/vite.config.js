@@ -16,9 +16,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
 
-        'framer-motion',
-        'dayjs',
-        'date-fns'
+        'framer-motion'
       ],
     },
   },
