@@ -1,10 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL, // ✅ variável de ambiente usada
 });
 
-// ✅ Interceptor que adiciona o token automaticamente a cada requisição
+// ✅ Interceptor para adicionar token automaticamente em cada requisição
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -16,9 +16,7 @@ api.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 export default api;

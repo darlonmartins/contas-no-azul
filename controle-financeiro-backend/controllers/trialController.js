@@ -79,10 +79,24 @@ exports.registerPayment = async (req, res) => {
 };
 
 // Middleware para verificar acesso
+// Middleware para verificar acesso
 exports.checkAccess = async (req, res, next) => {
   try {
-    if (req.path.includes('/auth/') || req.path.includes('/trial/') || req.path === '/api/health') {
+    if (
+      req.path.includes('/auth/') ||
+      req.path.includes('/trial/') ||
+      req.path === '/api/health'
+    ) {
       return next();
+    }
+
+    // ✅ Verificação de segurança para garantir que req.user existe
+    if (!req.user || !req.user.id) {
+      console.error('❌ req.user não está definido ou está incompleto');
+      return res.status(401).json({
+        success: false,
+        message: 'Usuário não autenticado. Token inválido ou ausente.',
+      });
     }
 
     const userId = req.user.id;
@@ -107,11 +121,15 @@ exports.checkAccess = async (req, res, next) => {
       message: 'Período de trial expirado. Por favor, realize o pagamento para continuar.',
       trialStatus: {
         expired: true,
-        hasPaid: false
-      }
+        hasPaid: false,
+      },
     });
   } catch (error) {
-    console.error('Erro ao verificar acesso:', error);
-    return res.status(500).json({ success: false, message: 'Erro ao verificar acesso' });
+    console.error('❌ Erro ao verificar acesso:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erro ao verificar acesso',
+    });
   }
 };
+
