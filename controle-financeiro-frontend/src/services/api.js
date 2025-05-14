@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://controle-financeiro-backend-owkw.onrender.com/api',
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 // ✅ Interceptor que adiciona o token automaticamente a cada requisição
