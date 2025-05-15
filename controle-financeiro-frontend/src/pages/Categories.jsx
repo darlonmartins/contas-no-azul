@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Folder } from "lucide-react";
 import api from "../services/api";
 import CategoryModal from "../components/categories/CategoryModal";
 
@@ -43,12 +43,15 @@ const Categories = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Categorias</h1>
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <Folder className="w-6 h-6 text-indigo-600" />
+          Categorias
+        </h1>
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
         >
           <PlusCircle size={18} />
           Nova Categoria
