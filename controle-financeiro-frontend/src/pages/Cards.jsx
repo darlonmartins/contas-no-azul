@@ -44,7 +44,6 @@ const Cards = () => {
     setLoading(false);
   }
 };
-
 if (loading) {
   return (
     <div className="flex flex-col items-center justify-center p-6 text-gray-600 text-sm animate-fade-in">
@@ -56,6 +55,7 @@ if (loading) {
     </div>
   );
 }
+
 
   const handleCreate = async (cardData) => {
     try {
