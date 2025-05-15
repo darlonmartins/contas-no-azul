@@ -94,7 +94,10 @@ const Cards = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Cartões</h2>
+        <h2 className="text-2xl font-bold flex items-center gap-2">
+          <CreditCard size={24} className="text-blue-600" />
+          Cartões
+        </h2>
         <button
           onClick={() => {
             setEditingCard(null);
@@ -108,6 +111,7 @@ const Cards = () => {
           <PlusCircle size={20} strokeWidth={2.5} />
         </button>
       </div>
+
 
       <div>
         <h3 className="text-lg font-semibold mb-3">Meus Cartões</h3>
