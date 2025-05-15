@@ -60,7 +60,7 @@ const Layout = () => {
             <img
               src={logo}
               alt="Logo Contas no Azul"
-              className="h-64 w-64 object-contain bg-white rounded-lg p-2 shadow-md"
+              className="h-40 w-64 object-contain bg-white rounded-lg p-2 shadow-md"
             />
           </div>
 
