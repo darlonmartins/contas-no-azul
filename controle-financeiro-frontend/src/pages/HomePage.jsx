@@ -18,7 +18,7 @@ const HomePage = () => {
       <header className="bg-blue-600 text-white px-8 py-4 flex justify-between items-center shadow">
         <div className="flex items-center gap-2 text-xl font-semibold">
           <LayoutDashboard className="w-6 h-6" />
-          Controle Financeiro
+          Contas no Azul
         </div>
         <div className="flex items-center gap-6 text-sm">
           <Link to="/" className="flex items-center gap-1 hover:underline">
