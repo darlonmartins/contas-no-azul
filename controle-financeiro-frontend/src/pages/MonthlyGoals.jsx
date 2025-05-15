@@ -45,22 +45,41 @@ const MonthlyGoals = () => {
           <CalendarRange className="w-6 h-6 text-indigo-600" />
           Metas Mensais
         </h1>
-        <button
-          onClick={() => {
-            setEditingGoal(null);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
-        >
-          <PlusCircle size={18} />
-          Cadastrar nova meta
-        </button>
+
+        {/* ✅ Só exibe botão no topo se houver metas */}
+        {goals.length > 0 && (
+          <button
+            onClick={() => {
+              setEditingGoal(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+          >
+            <PlusCircle size={18} />
+            Cadastrar nova meta
+          </button>
+        )}
       </div>
 
       {loading ? (
         <p className="text-gray-500">Carregando metas mensais...</p>
       ) : goals.length === 0 ? (
-        <p className="text-gray-600">Nenhuma meta mensal cadastrada.</p>
+        <div className="text-center text-gray-600 py-12 flex flex-col items-center">
+          <CalendarRange size={48} className="text-indigo-600 mb-4" />
+          <p className="text-xl font-semibold">Nenhuma meta mensal cadastrada</p>
+          <p className="text-sm text-gray-500 mt-2 mb-4">
+            Comece adicionando uma meta mensal para acompanhar seu progresso.
+          </p>
+          <button
+            onClick={() => {
+              setEditingGoal(null);
+              setIsModalOpen(true);
+            }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium"
+          >
+            Adicionar Meta
+          </button>
+        </div>
       ) : (
         <div className="grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {goals.map((goal) => (
