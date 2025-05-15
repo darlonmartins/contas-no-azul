@@ -66,6 +66,16 @@ const Layout = () => {
             </div>
           </div>
 
+          <div className="absolute top-4 right-6 z-50 flex items-center gap-4">
+            <span className="text-gray-700 font-medium text-sm">Olá, {userName} 👋</span>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow"
+            >
+              <LogOut size={18} />
+              Sair
+            </button>
+          </div>
 
 
 
@@ -96,17 +106,6 @@ const Layout = () => {
           </nav>
         </div>
 
-        {/* Sair */}
-        <div className="mt-6">
-          <h4 className="text-xs uppercase text-gray-400 px-4 mb-1 tracking-wide">Ações</h4>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-2 text-sm px-4 py-2 rounded bg-red-600 hover:bg-red-700 transition w-full"
-          >
-            <LogOut size={18} />
-            Sair
-          </button>
-        </div>
       </aside>
 
       {/* Conteúdo principal */}
