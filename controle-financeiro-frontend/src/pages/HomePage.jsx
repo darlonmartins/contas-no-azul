@@ -190,8 +190,8 @@ const HomePage = () => {
           </div>
           <div>
             <h4 className="font-semibold mb-2">Contato</h4>
-            <p>Email: contato@controlefinanceiro.com.br</p>
-            <p>Telefone: (11) 99999-9999</p>
+            <p>Email: contato@contasnoazul.com.br</p>
+            <p>Telefone: (61) 98270-5434</p>
             <div className="flex gap-2 mt-2 text-lg">
               <span>📘</span><span>🐦</span><span>📸</span>
             </div>
