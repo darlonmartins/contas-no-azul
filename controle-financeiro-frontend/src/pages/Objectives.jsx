@@ -37,22 +37,26 @@ const Objectives = () => {
   };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
+    <div className="p-4 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2 flex-1">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
           <Target className="w-6 h-6 text-indigo-600" />
           Meus Objetivos Financeiros
         </h1>
-        <button
-          onClick={() => {
-            setEditingObjective(null);
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
-        >
-          <PlusCircle className="w-5 h-5" />
-          Cadastrar novo objetivo
-        </button>
+
+        {/* ✅ Exibir botão somente se já houver objetivos */}
+        {objectives.length > 0 && (
+          <button
+            onClick={() => {
+              setEditingObjective(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
+          >
+            <PlusCircle className="w-5 h-5" />
+            Cadastrar novo objetivo
+          </button>
+        )}
       </div>
 
       {objectives.length === 0 ? (
