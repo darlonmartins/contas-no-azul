@@ -32,10 +32,13 @@ const PrivateRoute = ({ children }) => {
 };
 
 const TrialProtectedRoute = ({ children }) => {
+  if (!isAuthenticated()) return <Navigate to="/login" />;
+
   const { isActive, hasPaid, status } = useTrial();
 
-  if (!isAuthenticated()) return <Navigate to="/login" />;
-  if (!isActive && !hasPaid && status === 'expired') return <Navigate to="/payment" />;
+  if (!isActive && !hasPaid && status === 'expired') {
+    return <Navigate to="/payment" />;
+  }
 
   return children;
 };

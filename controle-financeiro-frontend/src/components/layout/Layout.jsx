@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
   CreditCard,
@@ -17,6 +17,7 @@ import logo from "@/assets/logo.png";
 const Layout = () => {
   const location = useLocation();
   const userName = localStorage.getItem("userName") || "Usuário";
+  const navigate = useNavigate();
 
   const sections = [
     {
@@ -45,10 +46,14 @@ const Layout = () => {
     },
   ];
 
+
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/";
+    localStorage.removeItem("userName");
+    sessionStorage.removeItem("token");
+    navigate("/login");
   };
+
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -79,11 +84,10 @@ const Layout = () => {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
-                        location.pathname === item.path
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${location.pathname === item.path
                           ? "bg-gray-800 font-semibold"
                           : "hover:bg-gray-800 hover:text-white"
-                      }`}
+                        }`}
                     >
                       {item.icon}
                       <span>{item.label}</span>
