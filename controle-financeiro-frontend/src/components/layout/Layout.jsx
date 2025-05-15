@@ -56,7 +56,7 @@ const Layout = () => {
       <aside className="w-64 bg-gray-900 text-white flex flex-col justify-between px-5 py-6 shadow-lg">
         <div>
           {/* Logo */}
-          <div className="flex justify-center mb-6">
+          <div className="flex flex-col items-center mb-6">
             <div className="bg-white rounded-lg p-2 shadow-md w-full max-w-[180px]">
               <img
                 src={logo}
@@ -64,6 +64,9 @@ const Layout = () => {
                 className="w-full h-auto object-contain"
               />
             </div>
+            <span className="mt-2 text-sm text-gray-300 font-medium">
+              {localStorage.getItem("userName") || "Usuário"}
+            </span>
           </div>
 
           <div className="absolute top-4 right-6 z-50 flex items-center gap-4">

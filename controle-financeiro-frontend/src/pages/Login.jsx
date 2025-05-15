@@ -38,6 +38,8 @@ const Login = () => {
         sessionStorage.setItem('token', token);
       }
 
+      localStorage.setItem('userName', response.data.user.name);
+
       navigate('/dashboard');
     } catch (err) {
       console.error('Erro no login:', err);
