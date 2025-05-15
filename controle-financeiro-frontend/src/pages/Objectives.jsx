@@ -12,15 +12,21 @@ const Objectives = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingObjective, setEditingObjective] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [loading, setLoading] = useState(true);
+
 
   const fetchObjectives = async () => {
-    try {
-      const res = await api.get('/goals');
-      setObjectives(res.data);
-    } catch (err) {
-      console.error('Erro ao buscar objetivos:', err);
-    }
-  };
+  try {
+    setLoading(true);
+    const res = await api.get('/goals');
+    setObjectives(res.data);
+  } catch (err) {
+    console.error('Erro ao buscar objetivos:', err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   useEffect(() => {
     fetchObjectives();
@@ -126,6 +132,19 @@ const Objectives = () => {
       )}
     </div>
   );
-};
+  };
+
+  if (loading) {
+  return (
+    <div className="flex flex-col items-center justify-center p-6 text-gray-600 text-sm animate-fade-in">
+      <svg className="animate-spin h-6 w-6 text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a10 10 0 00-10 10h4z" />
+      </svg>
+      <p>Carregando seus objetivos financeiros... aguarde um instante.</p>
+    </div>
+  );
+}
+
 
 export default Objectives;
