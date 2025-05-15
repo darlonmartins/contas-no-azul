@@ -4,7 +4,9 @@
     "dayjs": "^1.11.13",
     "framer-motion": "^12.11.0",
     "pg": "^8.16.0",
+    "pg-hstore": "^2.3.4",
     "recharts": "^2.15.3",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "sequelize-cli": "^6.6.3"
   }
 }

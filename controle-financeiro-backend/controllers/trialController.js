@@ -79,57 +79,63 @@ exports.registerPayment = async (req, res) => {
 };
 
 // Middleware para verificar acesso
-// Middleware para verificar acesso
+// Middleware para verificar acesso (temporariamente desativado)
+// Para reativar, descomente o bloco abaixo
+
+// exports.checkAccess = async (req, res, next) => {
+//   try {
+//     if (
+//       req.path.includes('/auth/') ||
+//       req.path.includes('/trial/') ||
+//       req.path === '/api/health'
+//     ) {
+//       return next();
+//     }
+
+//     // ✅ Verificação de segurança para garantir que req.user existe
+//     if (!req.user || !req.user.id) {
+//       console.error('❌ req.user não está definido ou está incompleto');
+//       return res.status(401).json({
+//         success: false,
+//         message: 'Usuário não autenticado. Token inválido ou ausente.',
+//       });
+//     }
+
+//     const userId = req.user.id;
+//     let trial = await Trial.findOne({ where: { userId } });
+
+//     if (!trial) {
+//       const startDate = new Date();
+//       const endDate = new Date(startDate);
+//       endDate.setDate(endDate.getDate() + 7);
+//       trial = await Trial.create({ userId, startDate, endDate });
+//     }
+
+//     const now = new Date();
+//     const endDate = new Date(trial.endDate);
+
+//     if ((now <= endDate && trial.isActive) || trial.hasPaid) {
+//       return next();
+//     }
+
+//     return res.status(403).json({
+//       success: false,
+//       message: 'Período de trial expirado. Por favor, realize o pagamento para continuar.',
+//       trialStatus: {
+//         expired: true,
+//         hasPaid: false,
+//       },
+//     });
+//   } catch (error) {
+//     console.error('❌ Erro ao verificar acesso:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Erro ao verificar acesso',
+//     });
+//   }
+// };
+
+// ✅ Libera todas as requisições por enquanto
 exports.checkAccess = async (req, res, next) => {
-  try {
-    if (
-      req.path.includes('/auth/') ||
-      req.path.includes('/trial/') ||
-      req.path === '/api/health'
-    ) {
-      return next();
-    }
-
-    // ✅ Verificação de segurança para garantir que req.user existe
-    if (!req.user || !req.user.id) {
-      console.error('❌ req.user não está definido ou está incompleto');
-      return res.status(401).json({
-        success: false,
-        message: 'Usuário não autenticado. Token inválido ou ausente.',
-      });
-    }
-
-    const userId = req.user.id;
-    let trial = await Trial.findOne({ where: { userId } });
-
-    if (!trial) {
-      const startDate = new Date();
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 7);
-      trial = await Trial.create({ userId, startDate, endDate });
-    }
-
-    const now = new Date();
-    const endDate = new Date(trial.endDate);
-
-    if ((now <= endDate && trial.isActive) || trial.hasPaid) {
-      return next();
-    }
-
-    return res.status(403).json({
-      success: false,
-      message: 'Período de trial expirado. Por favor, realize o pagamento para continuar.',
-      trialStatus: {
-        expired: true,
-        hasPaid: false,
-      },
-    });
-  } catch (error) {
-    console.error('❌ Erro ao verificar acesso:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Erro ao verificar acesso',
-    });
-  }
+  return next();
 };
-

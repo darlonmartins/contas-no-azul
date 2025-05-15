@@ -19,9 +19,9 @@ app.use('/api/trial', trialRoutes); // ⬅️ Deve vir antes dos middlewares pro
 
 // Middlewares protegidos
 const authenticate = require('./middlewares/authenticate');
-const { checkAccess } = require('./controllers/trialController');
+// const { checkAccess } = require('./controllers/trialController'); // ⏸️ Desabilitado temporariamente
 
-// Rotas protegidas (com autenticação + verificação de acesso)
+// Rotas protegidas (com autenticação apenas — trial desativado por enquanto)
 const transactionRoutes = require('./routes/transactionRoutes');
 const objectiveRoutes = require('./routes/objectiveRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
@@ -35,18 +35,19 @@ const incomeRoutes = require('./routes/incomeRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const monthlyGoalRoutes = require("./routes/monthlyGoalRoutes");
 
-app.use('/api/transactions', authenticate, checkAccess, transactionRoutes);
-app.use('/api/goals', authenticate, checkAccess, objectiveRoutes);
-app.use('/api/notifications', authenticate, checkAccess, notificationRoutes);
-app.use('/api/dashboard', authenticate, checkAccess, dashboardRoutes);
-app.use('/api/settings', authenticate, checkAccess, settingsRoutes);
-app.use('/api/cards', authenticate, checkAccess, cardRoutes);
-app.use('/api/accounts', authenticate, checkAccess, accountRoutes);
-app.use('/api/categories', authenticate, checkAccess, categoryRoutes);
-app.use('/api', authenticate, checkAccess, pdfRoutes);
-app.use('/api/records', authenticate, checkAccess, incomeRoutes);
-app.use('/api/invoices', authenticate, checkAccess, invoiceRoutes);
-app.use("/api/monthly-goals", monthlyGoalRoutes);
+// 🔓 Apenas autenticação, trial verificação desativada
+app.use('/api/transactions', authenticate, transactionRoutes);
+app.use('/api/goals', authenticate, objectiveRoutes);
+app.use('/api/notifications', authenticate, notificationRoutes);
+app.use('/api/dashboard', authenticate, dashboardRoutes);
+app.use('/api/settings', authenticate, settingsRoutes);
+app.use('/api/cards', authenticate, cardRoutes);
+app.use('/api/accounts', authenticate, accountRoutes);
+app.use('/api/categories', authenticate, categoryRoutes);
+app.use('/api', authenticate, pdfRoutes);
+app.use('/api/records', authenticate, incomeRoutes);
+app.use('/api/invoices', authenticate, invoiceRoutes);
+app.use("/api/monthly-goals", authenticate, monthlyGoalRoutes); // ✅ adicionar autenticação aqui também
 
 // Subir servidor
 const PORT = process.env.PORT || 3001;
