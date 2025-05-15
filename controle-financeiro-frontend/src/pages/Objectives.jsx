@@ -39,7 +39,7 @@ const Objectives = () => {
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2 flex-1">
           <Target className="w-6 h-6 text-indigo-600" />
           Meus Objetivos Financeiros
         </h1>
