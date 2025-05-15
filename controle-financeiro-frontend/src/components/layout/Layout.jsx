@@ -71,20 +71,7 @@ const Layout = () => {
             </span>
           </div>
 
-          {/* Barra superior */}
-          <header className="flex items-center justify-end gap-4 px-6 py-4 bg-white shadow-sm">
-            <span className="text-gray-700 font-medium hidden sm:inline">
-              Olá, {localStorage.getItem("userName") || "Usuário"} 👋
-            </span>
 
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow text-sm font-medium"
-            >
-              <LogOut size={16} />
-              Sair
-            </button>
-          </header>
 
 
 
@@ -116,6 +103,21 @@ const Layout = () => {
         </div>
 
       </aside>
+
+                {/* Barra superior */}
+          <header className="flex items-center justify-end gap-4 px-6 py-4 bg-white shadow-sm">
+            <span className="text-gray-700 font-medium hidden sm:inline">
+              Olá, {localStorage.getItem("userName") || "Usuário"} 👋
+            </span>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow text-sm font-medium"
+            >
+              <LogOut size={16} />
+              Sair
+            </button>
+          </header>
 
       {/* Conteúdo principal */}
       <main className="flex-1 p-6">
