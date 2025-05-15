@@ -71,16 +71,20 @@ const Layout = () => {
             </span>
           </div>
 
-          <div className="absolute top-4 right-6 z-50 flex items-center gap-4">
-            <span className="text-gray-700 font-medium text-sm">Olá, {userName} 👋</span>
+          {/* Barra superior */}
+          <header className="flex items-center justify-end gap-4 px-6 py-4 bg-white shadow-sm">
+            <span className="text-gray-700 font-medium hidden sm:inline">
+              Olá, {localStorage.getItem("userName") || "Usuário"} 👋
+            </span>
+
             <button
               onClick={handleLogout}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 shadow"
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow text-sm font-medium"
             >
-              <LogOut size={18} />
+              <LogOut size={16} />
               Sair
             </button>
-          </div>
+          </header>
 
 
 
