@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config(); // ⚠️ Carrega variáveis do .env
+require('dotenv').config();
 
 const app = express();
 
@@ -8,20 +8,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Rotas públicas (sem autenticação)
+// Rotas públicas
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const trialRoutes = require('./routes/trialRoutes');
-
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/trial', trialRoutes); // ⬅️ Deve vir antes dos middlewares protegidos
+app.use('/api/trial', trialRoutes);
 
 // Middlewares protegidos
 const authenticate = require('./middlewares/authenticate');
-// const { checkAccess } = require('./controllers/trialController'); // ⏸️ Desabilitado temporariamente
 
-// Rotas protegidas (com autenticação apenas — trial desativado por enquanto)
+// Rotas autenticadas
 const transactionRoutes = require('./routes/transactionRoutes');
 const objectiveRoutes = require('./routes/objectiveRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
@@ -35,7 +33,6 @@ const incomeRoutes = require('./routes/incomeRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
 const monthlyGoalRoutes = require("./routes/monthlyGoalRoutes");
 
-// 🔓 Apenas autenticação, trial verificação desativada
 app.use('/api/transactions', authenticate, transactionRoutes);
 app.use('/api/goals', authenticate, objectiveRoutes);
 app.use('/api/notifications', authenticate, notificationRoutes);
@@ -47,27 +44,24 @@ app.use('/api/categories', authenticate, categoryRoutes);
 app.use('/api', authenticate, pdfRoutes);
 app.use('/api/records', authenticate, incomeRoutes);
 app.use('/api/invoices', authenticate, invoiceRoutes);
-app.use("/api/monthly-goals", authenticate, monthlyGoalRoutes); // ✅ adicionar autenticação aqui também
+app.use("/api/monthly-goals", authenticate, monthlyGoalRoutes);
 
-// Subir servidor
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Servidor backend rodando na porta ${PORT}`);
-});
+// Banco de dados com retry
+const { sequelize, connectWithRetry } = require('./models');
 
-// Banco de dados
-const { sequelize } = require('./models');
+const startServer = async () => {
+  try {
+    await connectWithRetry(); // Retry na conexão com o banco
+    await sequelize.sync();   // Sincroniza models normalmente
+    console.log('🧠 Tabelas sincronizadas com o banco de dados');
 
-sequelize.sync().then(() => {
-  console.log('🧠 Tabelas sincronizadas com o banco de dados');
-});
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor backend rodando na porta ${PORT}`);
+    });
+  } catch (err) {
+    console.error('❌ Erro ao iniciar o servidor:', err.message);
+  }
+};
 
-// Teste de conexão com banco
-sequelize.query(`
-  CREATE TABLE IF NOT EXISTS teste_origem (
-    id SERIAL PRIMARY KEY,
-    info VARCHAR(255)
-  );
-`)
-  .then(() => console.log("🧪 Tabela 'teste_origem' criada para teste."))
-  .catch((err) => console.error("Erro ao criar tabela teste:", err));
+startServer();

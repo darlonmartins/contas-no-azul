@@ -16,4 +16,25 @@ const sequelize = new Sequelize(
   }
 );
 
-module.exports = sequelize;
+// Função com retry
+const connectWithRetry = async () => {
+  let attempts = 0;
+  const maxAttempts = 5;
+
+  while (attempts < maxAttempts) {
+    try {
+      await sequelize.authenticate();
+      console.log("✅ Banco de dados conectado com sucesso.");
+      break;
+    } catch (error) {
+      attempts++;
+      console.warn(`⚠️ Tentativa ${attempts} de conexão falhou:`, error.message);
+      if (attempts >= maxAttempts) {
+        throw new Error("🛑 Falha ao conectar ao banco após várias tentativas.");
+      }
+      await new Promise((res) => setTimeout(res, 4000)); // aguarda 4 segundos
+    }
+  }
+};
+
+module.exports = { sequelize, connectWithRetry };

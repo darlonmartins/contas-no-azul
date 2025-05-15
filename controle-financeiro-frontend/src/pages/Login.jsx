@@ -17,34 +17,7 @@ const Login = () => {
   const [showForgotModal, setShowForgotModal] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotMessage, setForgotMessage] = useState('');
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-
-  try {
-    const response = await api.post('/auth/login', { email, password });
-    const token = response.data.token;
-
-    if (!token) {
-      setError('Erro ao fazer login. Tente novamente.');
-      return;
-    }
-
-    // ✅ Salva o token no localStorage ou sessionStorage, conforme escolha
-    if (remember) {
-      localStorage.setItem('token', token);
-    } else {
-      sessionStorage.setItem('token', token);
-    }
-
-    navigate('/dashboard');
-  } catch (err) {
-    console.error('Erro no login:', err);
-    const mensagem = err.response?.data?.message || 'Erro ao fazer login.';
-    setError(mensagem);
-  }
-};
-
+  const [loading, setLoading] = useState(false);
 
   const handleGoogleLogin = () => {
     const fakeToken = 'token-google';
@@ -125,6 +98,12 @@ const handleSubmit = async (e) => {
               <LogIn className="w-5 h-5" />
               Entrar
             </button>
+            {loading && (
+              <p className="text-center text-sm text-gray-500 mt-2">
+                ⏳ Conectando ao banco... isso pode levar alguns segundos.
+              </p>
+            )}
+
           </form>
 
           <button
