@@ -78,7 +78,11 @@ const Dashboard = () => {
   return (
     <div className="p-6">
       <TrialBanner />
-      <h2 className="text-2xl font-bold mb-4">Dashboard</h2>
+
+      <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-gray-800">
+        <LayoutDashboard className="w-6 h-6 text-indigo-600" />
+        Dashboard
+      </h2>
 
       <div className="flex flex-wrap gap-4 mb-6">
         <MonthSelector
@@ -93,8 +97,6 @@ const Dashboard = () => {
           categories={categories}
           className="min-w-[200px]"
         />
-        
-
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -442,97 +444,97 @@ const Dashboard = () => {
       </div>
 
       {/* 🔹 BLOCO: Progresso das Metas Mensais */}
-<div className="bg-white p-4 rounded-lg shadow mb-6">
-  <div className="flex items-center justify-between mb-4">
-    <h3 className="text-lg font-semibold text-gray-700">Progresso das Metas Mensais</h3>
-    <CalendarRange className="h-5 w-5 text-purple-500" />
-  </div>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-    {data.monthlyGoals?.length > 0 ? (
-      data.monthlyGoals.map((goal) => {
-        const percent = Math.min(Math.round(goal.percentageUsed || 0), 999);
-        const used = goal.usedAmount ?? 0;
-        const barColor =
-          percent > 100 ? 'bg-red-500'
-            : percent > 80 ? 'bg-yellow-500'
-              : 'bg-green-500';
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-700">Progresso das Metas Mensais</h3>
+          <CalendarRange className="h-5 w-5 text-purple-500" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {data.monthlyGoals?.length > 0 ? (
+            data.monthlyGoals.map((goal) => {
+              const percent = Math.min(Math.round(goal.percentageUsed || 0), 999);
+              const used = goal.usedAmount ?? 0;
+              const barColor =
+                percent > 100 ? 'bg-red-500'
+                  : percent > 80 ? 'bg-yellow-500'
+                    : 'bg-green-500';
 
-        return (
-          <div key={goal.id} className="border p-3 rounded-lg">
-            <div className="flex justify-between items-center mb-1">
-              <span className="font-medium text-gray-800">{goal.Category?.name}</span>
-              <span className="text-xs text-gray-500">
-                {new Date(goal.month + '-01').toLocaleDateString('pt-BR', {
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </span>
-            </div>
-            <p className="text-sm text-gray-500 mb-1">
-              Meta: R$ {goal.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </p>
-            <div className="h-2 bg-gray-200 rounded-full mb-1">
-              <div
-                className={`h-2 rounded-full ${barColor}`}
-                style={{ width: `${Math.min(percent, 100)}%` }}
+              return (
+                <div key={goal.id} className="border p-3 rounded-lg">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-medium text-gray-800">{goal.Category?.name}</span>
+                    <span className="text-xs text-gray-500">
+                      {new Date(goal.month + '-01').toLocaleDateString('pt-BR', {
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 mb-1">
+                    Meta: R$ {goal.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </p>
+                  <div className="h-2 bg-gray-200 rounded-full mb-1">
+                    <div
+                      className={`h-2 rounded-full ${barColor}`}
+                      style={{ width: `${Math.min(percent, 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span>Usado: R$ {used.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    <span>{percent}%</span>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-sm text-gray-500">Nenhuma meta mensal cadastrada para o mês.</p>
+          )}
+        </div>
+      </div>
+
+
+      <div className="bg-white p-4 rounded shadow mb-8">
+        <h3 className="text-xl font-bold mb-4">Metas vs Despesas por Categoria</h3>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={chart} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="categoria" />
+            <YAxis
+              tickFormatter={(value) =>
+                `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`
+              }
+            />
+            <Tooltip
+              formatter={(value) =>
+                `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+              }
+            />
+            <Legend />
+            <Bar dataKey="metas" fill="#22c55e" name="Metas">
+              <LabelList
+                dataKey="metas"
+                position="top"
+                formatter={(value) =>
+                  `R$ ${Number(value).toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                  })}`
+                }
               />
-            </div>
-            <div className="flex justify-between text-xs text-gray-600">
-              <span>Usado: R$ {used.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-              <span>{percent}%</span>
-            </div>
-          </div>
-        );
-      })
-    ) : (
-      <p className="text-sm text-gray-500">Nenhuma meta mensal cadastrada para o mês.</p>
-    )}
-  </div>
-</div>
-
-
-<div className="bg-white p-4 rounded shadow mb-8">
-  <h3 className="text-xl font-bold mb-4">Metas vs Despesas por Categoria</h3>
-  <ResponsiveContainer width="100%" height={300}>
-    <BarChart data={chart} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-      <CartesianGrid strokeDasharray="3 3" />
-      <XAxis dataKey="categoria" />
-      <YAxis
-        tickFormatter={(value) =>
-          `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`
-        }
-      />
-      <Tooltip
-        formatter={(value) =>
-          `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-        }
-      />
-      <Legend />
-      <Bar dataKey="metas" fill="#22c55e" name="Metas">
-        <LabelList
-          dataKey="metas"
-          position="top"
-          formatter={(value) =>
-            `R$ ${Number(value).toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-            })}`
-          }
-        />
-      </Bar>
-      <Bar dataKey="despesas" fill="#ef4444" name="Despesas">
-        <LabelList
-          dataKey="despesas"
-          position="top"
-          formatter={(value) =>
-            `R$ ${Number(value).toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-            })}`
-          }
-        />
-      </Bar>
-    </BarChart>
-  </ResponsiveContainer>
-</div>
+            </Bar>
+            <Bar dataKey="despesas" fill="#ef4444" name="Despesas">
+              <LabelList
+                dataKey="despesas"
+                position="top"
+                formatter={(value) =>
+                  `R$ ${Number(value).toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                  })}`
+                }
+              />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
 
 
 
@@ -595,42 +597,42 @@ const Dashboard = () => {
       </div>
 
 
-<div className="bg-white p-4 rounded-lg shadow mb-6">
-  <div className="flex items-center justify-between mb-4">
-    <h3 className="text-lg font-semibold text-gray-700">Objetivos Financeiros</h3>
-    <Wallet className="h-5 w-5 text-blue-500" />
-  </div>
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-    {goals.map((goal, index) => {
-      const percentage = ((goal.currentAmount / goal.targetAmount) * 100).toFixed(0);
-      const isCompleted = goal.currentAmount >= goal.targetAmount;
-
-      const status = isCompleted ? 'Concluído' : 'Em andamento';
-      const statusClass = isCompleted
-        ? 'bg-green-100 text-green-800'
-        : 'bg-blue-100 text-blue-800';
-
-      const barClass = isCompleted ? 'bg-green-500' : 'bg-blue-500';
-
-      return (
-        <div key={index} className="border rounded-lg p-3">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm font-medium text-gray-700">{goal.name}</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${statusClass}`}>{status}</span>
-          </div>
-          <div className="flex justify-between text-sm text-gray-600 mb-1">
-            <span>R$ {(goal.currentAmount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-            <span>de R$ {(goal.targetAmount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-          </div>
-          <div className="h-2 bg-gray-200 rounded-full">
-            <div className={`h-2 rounded-full ${barClass}`} style={{ width: `${percentage}%` }}></div>
-          </div>
-          <div className="mt-1 text-xs text-gray-500 text-right">{percentage}% concluído</div>
+      <div className="bg-white p-4 rounded-lg shadow mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-700">Objetivos Financeiros</h3>
+          <Wallet className="h-5 w-5 text-blue-500" />
         </div>
-      );
-    })}
-  </div>
-</div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {goals.map((goal, index) => {
+            const percentage = ((goal.currentAmount / goal.targetAmount) * 100).toFixed(0);
+            const isCompleted = goal.currentAmount >= goal.targetAmount;
+
+            const status = isCompleted ? 'Concluído' : 'Em andamento';
+            const statusClass = isCompleted
+              ? 'bg-green-100 text-green-800'
+              : 'bg-blue-100 text-blue-800';
+
+            const barClass = isCompleted ? 'bg-green-500' : 'bg-blue-500';
+
+            return (
+              <div key={index} className="border rounded-lg p-3">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">{goal.name}</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${statusClass}`}>{status}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600 mb-1">
+                  <span>R$ {(goal.currentAmount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                  <span>de R$ {(goal.targetAmount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full">
+                  <div className={`h-2 rounded-full ${barClass}`} style={{ width: `${percentage}%` }}></div>
+                </div>
+                <div className="mt-1 text-xs text-gray-500 text-right">{percentage}% concluído</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
     </div>
   );
