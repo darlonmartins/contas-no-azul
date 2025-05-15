@@ -45,17 +45,6 @@ const HomePage = () => {
           </p>
         </div>
 
-        {/* Trial Banner */}
-        <div className="bg-blue-100 text-blue-800 border border-blue-300 px-4 py-3 rounded mb-8 flex justify-between items-center">
-          <div>
-            <p className="font-semibold">🔔 Período de Avaliação</p>
-            <p className="text-sm">Você está no período de avaliação gratuita. Restam 7 dias.</p>
-          </div>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-1">
-            <CreditCard className="w-4 h-4" /> Assinar agora
-          </button>
-        </div>
-
         {/* Dashboard Cards */}
         <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="p-4 shadow-md">
@@ -166,7 +155,7 @@ const HomePage = () => {
             <Card className="p-4 shadow-md">
               <div className="flex items-center mb-2">
                 <Target className="text-green-500 w-5 h-5 mr-2" />
-                <h3 className="font-semibold">Metas Financeiras</h3>
+                <h3 className="font-semibold">Obejtivos Financeiros</h3>
               </div>
               <p className="text-sm">Defina metas de economia e acompanhe seu progresso de forma visual.</p>
             </Card>

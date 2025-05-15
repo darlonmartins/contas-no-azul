@@ -30,7 +30,12 @@ const Login = () => {
         return;
       }
 
-      localStorage.setItem('token', token);
+      if (remember) {
+        localStorage.setItem('token', token); 
+      } else {
+        sessionStorage.setItem('token', token); 
+      }
+
       navigate('/dashboard');
     } catch (err) {
       console.error('Erro no login:', err);
