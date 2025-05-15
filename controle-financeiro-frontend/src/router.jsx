@@ -23,8 +23,9 @@ import Layout from './components/layout/Layout';
 import { useTrial } from './context/TrialContext';
 
 const isAuthenticated = () => {
-  return !!localStorage.getItem('token');
+  return !!(localStorage.getItem('token') || sessionStorage.getItem('token'));
 };
+
 
 const PrivateRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/login" />;
