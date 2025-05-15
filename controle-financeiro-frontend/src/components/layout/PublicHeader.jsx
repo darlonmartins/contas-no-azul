@@ -7,7 +7,7 @@ const PublicHeader = () => {
     <header className="bg-blue-600 text-white px-6 py-3 flex justify-between items-center shadow">
       <div className="flex items-center gap-2 font-semibold text-lg">
         <LayoutDashboard className="w-5 h-5" />
-        Controle Financeiro
+        Contas no Azul
       </div>
       <nav className="flex gap-4 items-center text-sm">
         <Link to="/" className="flex items-center gap-1 hover:underline">

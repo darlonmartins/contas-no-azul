@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 const Header = () => {
   return (
     <header className="bg-blue-600 text-white p-4 flex justify-between items-center shadow">
-      <h1 className="text-xl font-bold">Controle Financeiro</h1>
+      <h1 className="text-xl font-bold">Contas no Azul</h1>
       <nav className="space-x-4">
         <Link to="/dashboard" className="hover:underline">Dashboard</Link>
         <Link to="/expenses" className="hover:underline">Despesas</Link>

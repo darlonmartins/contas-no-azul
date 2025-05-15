@@ -96,7 +96,7 @@ const PaymentPage = () => {
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6">
-        <h3 className="font-semibold text-blue-800">Controle Financeiro Premium</h3>
+        <h3 className="font-semibold text-blue-800">Contas no Azul Premium</h3>
         <p className="text-blue-700 text-sm mt-1">Acesso a todas as funcionalidades por apenas R$ 19,90/mês</p>
         <ul className="text-sm text-blue-700 mt-2">
           <li className="flex items-center mt-1">

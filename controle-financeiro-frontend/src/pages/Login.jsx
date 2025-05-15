@@ -149,7 +149,7 @@ const Login = () => {
           </p>
 
           <div className="mt-6 text-xs text-center text-gray-400 border-t pt-4">
-            © 2025 Controle Financeiro. Todos os direitos reservados.
+            © 2025 Contas no Azul. Todos os direitos reservados.
           </div>
         </div>
       </div>

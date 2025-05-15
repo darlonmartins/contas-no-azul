@@ -39,7 +39,7 @@ const HomePage = () => {
       <main className="container mx-auto my-6 px-6">
         {/* Título e subtítulo */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-600">Controle Financeiro</h1>
+          <h1 className="text-3xl font-bold text-blue-600">Contas no Azul</h1>
           <p className="text-gray-600 text-lg mt-2">
             Sistema completo para gerenciamento de suas finanças pessoais
           </p>
@@ -176,7 +176,7 @@ const HomePage = () => {
       <footer className="bg-gray-800 text-white py-8">
         <div className="container mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 text-sm px-6">
           <div>
-            <h4 className="font-semibold mb-2">Controle Financeiro</h4>
+            <h4 className="font-semibold mb-2">Contas no Azul</h4>
             <p>Sistema completo para gerenciamento de suas finanças pessoais, com dashboard, controle de cartões, alertas inteligentes e muito mais.</p>
           </div>
           <div>
@@ -198,7 +198,7 @@ const HomePage = () => {
           </div>
         </div>
         <div className="container mx-auto mt-8 pt-4 border-t border-gray-700 text-center text-xs text-gray-400">
-          © 2025 Controle Financeiro. Todos os direitos reservados.
+          © 2025 Contas no Azul. Todos os direitos reservados.
         </div>
       </footer>
     </div>
