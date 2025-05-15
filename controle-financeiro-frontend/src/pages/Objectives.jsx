@@ -13,28 +13,29 @@ const Objectives = () => {
   const [editingObjective, setEditingObjective] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-const fetchObjectives = async () => {
-  try {
-    const res = await api.get('/goals');
-    setObjectives(res.data);
-  } catch (err) {
-    console.error('Erro ao buscar objetivos:', err);
-  }
-};
+  const fetchObjectives = async () => {
+    try {
+      const res = await api.get('/goals');
+      setObjectives(res.data);
+    } catch (err) {
+      console.error('Erro ao buscar objetivos:', err);
+    }
+  };
 
-useEffect(() => {
-  fetchObjectives();
-}, []);
-
-const handleDelete = async () => {
-  try {
-    await api.delete(`/goals/${deleteTarget}`);
-    setDeleteTarget(null);
+  useEffect(() => {
     fetchObjectives();
-  } catch (err) {
-    console.error('Erro ao excluir objetivo:', err);
-  }
-};
+  }, []);
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/goals/${deleteTarget}`);
+      setDeleteTarget(null);
+      fetchObjectives();
+    } catch (err) {
+      console.error('Erro ao excluir objetivo:', err);
+    }
+  };
+
   return (
     <div className="p-4 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-6">
@@ -54,14 +55,33 @@ const handleDelete = async () => {
         </button>
       </div>
 
-      <ObjectiveList
-        objectives={objectives}
-        onEdit={(obj) => {
-          setEditingObjective(obj);
-          setIsModalOpen(true);
-        }}
-        onDelete={(id) => setDeleteTarget(id)}
-      />
+      {objectives.length === 0 ? (
+        <div className="text-center text-gray-600 py-12 flex flex-col items-center">
+          <Target size={48} className="text-indigo-600 mb-4" />
+          <p className="text-xl font-semibold">Nenhum objetivo cadastrado</p>
+          <p className="text-sm text-gray-500 mt-2 mb-4">
+            Comece adicionando uma meta financeira para acompanhar seu progresso.
+          </p>
+          <button
+            onClick={() => {
+              setEditingObjective(null);
+              setIsModalOpen(true);
+            }}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium"
+          >
+            Adicionar Objetivo
+          </button>
+        </div>
+      ) : (
+        <ObjectiveList
+          objectives={objectives}
+          onEdit={(obj) => {
+            setEditingObjective(obj);
+            setIsModalOpen(true);
+          }}
+          onDelete={(id) => setDeleteTarget(id)}
+        />
+      )}
 
       <AnimatePresence>
         {isModalOpen && (
@@ -85,7 +105,6 @@ const handleDelete = async () => {
                   fetchObjectives();
                 }}
               />
-
             </motion.div>
           </motion.div>
         )}
