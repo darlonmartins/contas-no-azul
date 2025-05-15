@@ -10,14 +10,13 @@ import {
   LogOut,
   Landmark,
   ListChecks,
-  FolderKanban, // ✅ novo ícone para Categorias
+  FolderKanban,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 
 const Layout = () => {
   const location = useLocation();
   const userName = localStorage.getItem("userName") || "Usuário";
-
 
   const sections = [
     {
@@ -36,8 +35,7 @@ const Layout = () => {
         { path: "/metas", label: "Metas", icon: <DollarSign size={20} /> },
         { path: "/categories", label: "Categorias", icon: <FolderKanban size={20} /> },
       ],
-    }
-    ,
+    },
     {
       title: "Sistema",
       items: [
@@ -66,14 +64,8 @@ const Layout = () => {
                 className="w-full h-auto object-contain"
               />
             </div>
-            <span className="mt-2 text-sm text-gray-300 font-medium">
-              {localStorage.getItem("userName") || "Usuário"}
-            </span>
+            <span className="mt-2 text-sm text-gray-300 font-medium">{userName}</span>
           </div>
-
-
-
-
 
           {/* Menu agrupado */}
           <nav className="flex flex-col gap-6">
@@ -87,10 +79,11 @@ const Layout = () => {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${location.pathname === item.path
-                        ? "bg-gray-800 font-semibold"
-                        : "hover:bg-gray-800 hover:text-white"
-                        }`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
+                        location.pathname === item.path
+                          ? "bg-gray-800 font-semibold"
+                          : "hover:bg-gray-800 hover:text-white"
+                      }`}
                     >
                       {item.icon}
                       <span>{item.label}</span>
@@ -101,28 +94,29 @@ const Layout = () => {
             ))}
           </nav>
         </div>
-
       </aside>
 
-                {/* Barra superior */}
-          <header className="flex items-center justify-end gap-4 px-6 py-4 bg-white shadow-sm">
-            <span className="text-gray-700 font-medium hidden sm:inline">
-              Olá, {localStorage.getItem("userName") || "Usuário"} 👋
-            </span>
+      {/* Área principal: Header + Outlet */}
+      <div className="flex-1 flex flex-col">
+        {/* Topbar fixa */}
+        <header className="flex items-center justify-end gap-4 px-6 py-4 bg-white shadow-sm">
+          <span className="text-gray-700 font-medium hidden sm:inline">
+            Olá, {userName} 👋
+          </span>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow text-sm font-medium"
+          >
+            <LogOut size={16} />
+            Sair
+          </button>
+        </header>
 
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg shadow text-sm font-medium"
-            >
-              <LogOut size={16} />
-              Sair
-            </button>
-          </header>
-
-      {/* Conteúdo principal */}
-      <main className="flex-1 p-6">
-        <Outlet />
-      </main>
+        {/* Conteúdo da página */}
+        <main className="flex-1 overflow-y-auto p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 };
