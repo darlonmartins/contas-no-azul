@@ -57,12 +57,15 @@ const Layout = () => {
         <div>
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <img
-              src={logo}
-              alt="Logo Contas no Azul"
-              className="h-40 w-64 object-contain bg-white rounded-lg p-2 shadow-md"
-            />
+            <div className="bg-white rounded-lg p-2 shadow-md w-full max-w-[180px]">
+              <img
+                src={logo}
+                alt="Logo Contas no Azul"
+                className="w-full h-auto object-contain"
+              />
+            </div>
           </div>
+
 
 
 
