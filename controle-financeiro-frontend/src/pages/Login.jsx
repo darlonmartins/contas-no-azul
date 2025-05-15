@@ -18,31 +18,33 @@ const Login = () => {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotMessage, setForgotMessage] = useState('');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      const token = response.data.token;
+  try {
+    const response = await api.post('/auth/login', { email, password });
+    const token = response.data.token;
 
-      if (!token) {
-        setError('Erro ao fazer login. Tente novamente.');
-        return;
-      }
-
-      if (remember) {
-        localStorage.setItem('token', token); 
-      } else {
-        sessionStorage.setItem('token', token); 
-      }
-
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Erro no login:', err);
-      const mensagem = err.response?.data?.message || 'Erro ao fazer login.';
-      setError(mensagem);
+    if (!token) {
+      setError('Erro ao fazer login. Tente novamente.');
+      return;
     }
-  };
+
+    // ✅ Salva o token no localStorage ou sessionStorage, conforme escolha
+    if (remember) {
+      localStorage.setItem('token', token);
+    } else {
+      sessionStorage.setItem('token', token);
+    }
+
+    navigate('/dashboard');
+  } catch (err) {
+    console.error('Erro no login:', err);
+    const mensagem = err.response?.data?.message || 'Erro ao fazer login.';
+    setError(mensagem);
+  }
+};
+
 
   const handleGoogleLogin = () => {
     const fakeToken = 'token-google';
