@@ -16,6 +16,8 @@ import logo from "@/assets/logo.png";
 
 const Layout = () => {
   const location = useLocation();
+  const userName = localStorage.getItem("userName") || "Usuário";
+
 
   const sections = [
     {

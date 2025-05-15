@@ -38,7 +38,9 @@ const Login = () => {
         sessionStorage.setItem('token', token);
       }
 
-      localStorage.setItem('userName', response.data.user.name);
+      const user = response.data.user;
+      localStorage.setItem('userName', user?.name || 'Usuário');
+
 
       navigate('/dashboard');
     } catch (err) {
@@ -180,6 +182,7 @@ const Login = () => {
             <div className="flex gap-2">
               <button
                 type="button"
+                aria-label="Enviar e-mail de recuperação"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold"
                 onClick={() => {
                   if (forgotEmail.trim() === '') {
