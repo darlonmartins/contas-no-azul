@@ -27,15 +27,15 @@ const Layout = () => {
       ],
     },
     {
-  title: "Gestão Financeira",
-  items: [
-    { path: "/registros", label: "Registros", icon: <ListChecks size={20} /> },
-    { path: "/goals", label: "Objetivos", icon: <Flag size={20} /> },
-    { path: "/metas", label: "Metas", icon: <DollarSign size={20} /> },
-    { path: "/categories", label: "Categorias", icon: <FolderKanban size={20} /> },
-  ],
-}
-,
+      title: "Gestão Financeira",
+      items: [
+        { path: "/registros", label: "Registros", icon: <ListChecks size={20} /> },
+        { path: "/goals", label: "Objetivos", icon: <Flag size={20} /> },
+        { path: "/metas", label: "Metas", icon: <DollarSign size={20} /> },
+        { path: "/categories", label: "Categorias", icon: <FolderKanban size={20} /> },
+      ],
+    }
+    ,
     {
       title: "Sistema",
       items: [
@@ -57,8 +57,14 @@ const Layout = () => {
         <div>
           {/* Logo */}
           <div className="flex justify-center mb-6">
-            <img src={logo} alt="Logo" className="w-32 h-auto" />
+            <img
+              src={logo}
+              alt="Logo Contas no Azul"
+              className="h-20 w-auto object-contain bg-white rounded-lg p-1"
+            />
           </div>
+
+
 
           {/* Menu agrupado */}
           <nav className="flex flex-col gap-6">
@@ -72,11 +78,10 @@ const Layout = () => {
                     <Link
                       key={item.path}
                       to={item.path}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${
-                        location.pathname === item.path
-                          ? "bg-gray-800 font-semibold"
-                          : "hover:bg-gray-800 hover:text-white"
-                      }`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md transition-all duration-200 ${location.pathname === item.path
+                        ? "bg-gray-800 font-semibold"
+                        : "hover:bg-gray-800 hover:text-white"
+                        }`}
                     >
                       {item.icon}
                       <span>{item.label}</span>
