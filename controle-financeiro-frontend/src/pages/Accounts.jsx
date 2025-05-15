@@ -114,7 +114,10 @@ const Accounts = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Contas</h2>
+        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
+          <Landmark className="w-6 h-6 text-blue-600" />
+          Contas
+        </h2>
         <button
           onClick={() => {
             setEditingAccount(null);
@@ -130,23 +133,23 @@ const Accounts = () => {
 
       {/* Card de Saldo Total */}
       {accounts.length > 0 && (
-  <div className="bg-green-100 border border-green-300 text-green-800 px-6 py-4 rounded-xl shadow w-[330px]">
-    <div className="flex items-center gap-3">
-      <span className="text-2xl">💰</span>
-      <div>
-        <p className="text-sm font-medium">Saldo Total em Contas</p>
-        <p className="text-lg font-bold">
-          {formatCurrency(
-            accounts.reduce(
-              (total, acc) => total + parseFloat(acc.saldoAtual || 0),
-              0
-            )
-          )}
-        </p>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="bg-green-100 border border-green-300 text-green-800 px-6 py-4 rounded-xl shadow w-[330px]">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">💰</span>
+            <div>
+              <p className="text-sm font-medium">Saldo Total em Contas</p>
+              <p className="text-lg font-bold">
+                {formatCurrency(
+                  accounts.reduce(
+                    (total, acc) => total + parseFloat(acc.saldoAtual || 0),
+                    0
+                  )
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {mainAccount && (
