@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CreditCard, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// Importando logos das bandeiras
 import visa from "../assets/visa.png";
 import mastercard from "../assets/mastercard.png";
 import elo from "../assets/elo.png";
@@ -112,99 +111,115 @@ const Cards = () => {
 
       <div>
         <h3 className="text-lg font-semibold mb-3">Meus Cartões</h3>
-        <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {cards
-            .sort((a, b) => a.dueDate - b.dueDate)
-            .map((card) => {
-              const usedPercent = Math.min(
-                100,
-                ((card.limit - card.availableLimit) / card.limit) * 100
-              );
-              const daysUntilDue = getDaysUntilDue(card.dueDate);
-              const brandKey = card.brand?.toLowerCase();
-              const logoSrc = brandLogos[brandKey] || null;
 
-              return (
-                <li
-                  key={card.id}
-                  className="bg-white p-4 rounded shadow space-y-2 cursor-pointer hover:ring-2 hover:ring-blue-500 transition relative"
-                  onClick={() => handleCardClick(card.id)}
-                >
-                  {/* Botões de ação no topo direito */}
-                  <div className="absolute top-2 right-2 flex gap-1 z-10">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingCard(card);
-                        setIsModalOpen(true);
-                      }}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white p-1 rounded"
-                      title="Editar"
-                    >
-                      <Pencil size={16} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmDeleteId(card.id);
-                      }}
-                      className="bg-red-500 hover:bg-red-600 text-white p-1 rounded"
-                      title="Excluir"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+        {cards.length === 0 ? (
+          <div className="text-center text-gray-600 py-12 flex flex-col items-center">
+            <CreditCard size={48} className="text-blue-500 mb-4" />
+            <p className="text-xl font-semibold">Nenhum cartão cadastrado</p>
+            <p className="text-sm text-gray-500 mt-2 mb-4">
+              Você ainda não adicionou nenhum cartão. Clique no botão acima para cadastrar.
+            </p>
+            <button
+              onClick={() => {
+                setEditingCard(null);
+                setIsModalOpen(true);
+              }}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium"
+            >
+              Adicionar Cartão
+            </button>
+          </div>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {cards
+              .sort((a, b) => a.dueDate - b.dueDate)
+              .map((card) => {
+                const usedPercent = Math.min(
+                  100,
+                  ((card.limit - card.availableLimit) / card.limit) * 100
+                );
+                const daysUntilDue = getDaysUntilDue(card.dueDate);
+                const brandKey = card.brand?.toLowerCase();
+                const logoSrc = brandLogos[brandKey] || null;
 
-                  {/* Nome e logo separados */}
-                  <p className="font-bold text-lg">{card.name}</p>
-                  {logoSrc && (
-                    <div className="flex justify-end">
-                      <img
-                        src={logoSrc}
-                        alt={card.brand}
-                        className="h-6"
-                        onClick={(e) => e.stopPropagation()}
+                return (
+                  <li
+                    key={card.id}
+                    className="bg-white p-4 rounded shadow space-y-2 cursor-pointer hover:ring-2 hover:ring-blue-500 transition relative"
+                    onClick={() => handleCardClick(card.id)}
+                  >
+                    <div className="absolute top-2 right-2 flex gap-1 z-10">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCard(card);
+                          setIsModalOpen(true);
+                        }}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white p-1 rounded"
+                        title="Editar"
+                      >
+                        <Pencil size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteId(card.id);
+                        }}
+                        className="bg-red-500 hover:bg-red-600 text-white p-1 rounded"
+                        title="Excluir"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+
+                    <p className="font-bold text-lg">{card.name}</p>
+                    {logoSrc && (
+                      <div className="flex justify-end">
+                        <img
+                          src={logoSrc}
+                          alt={card.brand}
+                          className="h-6"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                    )}
+
+                    <p className="text-sm text-gray-600">
+                      Limite: {Number(card.limit).toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Disponível: {Number(card.availableLimit).toLocaleString("pt-BR", {
+                        style: "currency",
+                        currency: "BRL",
+                      })}
+                    </p>
+
+                    <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
+                      <div
+                        className={`${getBarColor(usedPercent)} h-full transition-all`}
+                        style={{ width: `${usedPercent}%` }}
                       />
                     </div>
-                  )}
+                    <p className="text-xs text-gray-500 text-right">
+                      Uso: {usedPercent.toFixed(0)}%
+                    </p>
 
-                  <p className="text-sm text-gray-600">
-                    Limite: {Number(card.limit).toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Disponível: {Number(card.availableLimit).toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })}
-                  </p>
-
-                  <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
-                    <div
-                      className={`${getBarColor(
-                        usedPercent
-                      )} h-full transition-all`}
-                      style={{ width: `${usedPercent}%` }}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 text-right">
-                    Uso: {usedPercent.toFixed(0)}%
-                  </p>
-
-                  <p className="text-sm text-gray-600">
-                    Vencimento: dia {card.dueDate}
-                    {daysUntilDue <= 5 && (
-                      <span className="text-red-500 font-semibold ml-2">
-                        (Venc. em {daysUntilDue} dias)
-                      </span>
-                    )}
-                  </p>
-                </li>
-              );
-            })}
-        </ul>
+                    <p className="text-sm text-gray-600">
+                      Vencimento: dia {card.dueDate}
+                      {daysUntilDue <= 5 && (
+                        <span className="text-red-500 font-semibold ml-2">
+                          (Venc. em {daysUntilDue} dias)
+                        </span>
+                      )}
+                    </p>
+                  </li>
+                );
+              })}
+          </ul>
+        )}
       </div>
 
       <CardModal
