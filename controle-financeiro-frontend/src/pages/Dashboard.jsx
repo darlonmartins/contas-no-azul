@@ -8,6 +8,7 @@ import MonthSelector from '../components/dashboard/MonthSelector';
 import CategorySelector from '../components/dashboard/CategorySelector';
 import dayjs from 'dayjs';
 import TrialBanner from '../components/ui/TrialBanner';
+import { LayoutDashboard } from "lucide-react";
 import {
   BarChart3,
   CreditCard,
