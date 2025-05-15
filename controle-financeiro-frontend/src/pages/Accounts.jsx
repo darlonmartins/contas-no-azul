@@ -9,15 +9,21 @@ const Accounts = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [loading, setLoading] = useState(true);
+
 
   const fetchAccounts = async () => {
     try {
+      setLoading(true);
       const response = await api.get("/accounts");
       setAccounts(response.data);
     } catch (err) {
       console.error("Erro ao carregar contas:", err);
+    } finally {
+      setLoading(false);
     }
   };
+
 
   const handleCreate = async (accountData) => {
     try {
@@ -109,7 +115,20 @@ const Accounts = () => {
         </div>
       </li>
     );
+
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-6 text-gray-600 text-sm animate-fade-in">
+        <svg className="animate-spin h-6 w-6 text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a10 10 0 00-10 10h4z" />
+        </svg>
+        <p>Carregando informações das contas... aguarde um instante.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
