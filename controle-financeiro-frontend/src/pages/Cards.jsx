@@ -22,6 +22,7 @@ const brandLogos = {
   outro,
 };
 
+
 const Cards = () => {
   const [cards, setCards] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -83,8 +84,7 @@ const Cards = () => {
     const dueDate = new Date();
     dueDate.setDate(dueDay);
     if (dueDate < today) dueDate.setMonth(dueDate.getMonth() + 1);
-    const diff = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-    return diff;
+    return Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
   };
 
   useEffect(() => {
@@ -98,20 +98,23 @@ const Cards = () => {
           <CreditCard size={24} className="text-blue-600" />
           Cartões
         </h2>
-        <button
-          onClick={() => {
-            setEditingCard(null);
-            setIsModalOpen(false);
-            setTimeout(() => setIsModalOpen(true), 50);
-          }}
-          className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg shadow font-semibold text-sm transition"
-        >
-          <CreditCard size={20} />
-          Cadastrar Novo Cartão
-          <PlusCircle size={20} strokeWidth={2.5} />
-        </button>
-      </div>
 
+        {/* ✅ Exibe o botão apenas se houver cartões */}
+        {cards.length > 0 && (
+          <button
+            onClick={() => {
+              setEditingCard(null);
+              setIsModalOpen(false);
+              setTimeout(() => setIsModalOpen(true), 50);
+            }}
+            className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg shadow font-semibold text-sm transition"
+          >
+            <CreditCard size={20} />
+            Cadastrar Novo Cartão
+            <PlusCircle size={20} strokeWidth={2.5} />
+          </button>
+        )}
+      </div>
 
       <div>
         <h3 className="text-lg font-semibold mb-3">Meus Cartões</h3>
@@ -121,7 +124,7 @@ const Cards = () => {
             <CreditCard size={48} className="text-blue-500 mb-4" />
             <p className="text-xl font-semibold">Nenhum cartão cadastrado</p>
             <p className="text-sm text-gray-500 mt-2 mb-4">
-              Você ainda não adicionou nenhum cartão. Clique no botão acima para cadastrar.
+              Você ainda não adicionou nenhum cartão. Clique no botão abaixo para cadastrar.
             </p>
             <button
               onClick={() => {
@@ -195,7 +198,8 @@ const Cards = () => {
                       })}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Disponível: {Number(card.availableLimit).toLocaleString("pt-BR", {
+                      Disponível:{" "}
+                      {Number(card.availableLimit).toLocaleString("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                       })}
