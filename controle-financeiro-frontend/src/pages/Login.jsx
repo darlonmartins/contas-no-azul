@@ -4,7 +4,8 @@ import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import PublicHeader from '../components/layout/PublicHeader';
 import api from '../services/api';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import jwt_decode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode';
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -139,14 +140,13 @@ const Login = () => {
             <GoogleOAuthProvider clientId="454041816563-vtd5oie4tfaqbqifgbtht68rtvouig66.apps.googleusercontent.com">
               <GoogleLogin
                 onSuccess={(credentialResponse) => {
-                  const decoded = jwt_decode(credentialResponse.credential);
+                  const decoded = jwtDecode(credentialResponse.credential);
                   console.log("✅ Google Login Success:", decoded);
 
                   const token = credentialResponse.credential;
                   localStorage.setItem("token", token);
                   localStorage.setItem("userName", decoded.name || "Usuário");
 
-                  // Redireciona após login
                   navigate("/dashboard");
                 }}
                 onError={() => {
@@ -156,6 +156,7 @@ const Login = () => {
                 width="100%"
                 useOneTap
               />
+
             </GoogleOAuthProvider>
           </div>
 
