@@ -1,10 +1,13 @@
 console.log('📂 Arquivo authService carregado:', __filename);
 
+const { OAuth2Client } = require('google-auth-library');
+const bcrypt = require('bcryptjs');
 const generateToken = require('../utils/generateToken');
 const { User } = require('../models');
-const bcrypt = require('bcryptjs');
 
-// LOGIN
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// 🔐 LOGIN tradicional
 const login = async (email, password) => {
   console.log('🧪 Login: recebendo email:', email, 'senha:', password);
 
@@ -37,7 +40,7 @@ const login = async (email, password) => {
   };
 };
 
-// REGISTER
+// ➕ REGISTER
 const register = async (name, email, password) => {
   const existingUser = await User.findOne({ where: { email } });
   if (existingUser) {
@@ -56,9 +59,6 @@ const register = async (name, email, password) => {
 
     console.log('✅ Usuário salvo com sucesso:', user.toJSON());
 
-    // ❌ REMOVIDO: criação duplicada da conta "Carteira"
-    // A criação está controlada no authController.js com verificação
-
     return {
       id: user.id,
       name: user.name,
@@ -70,4 +70,46 @@ const register = async (name, email, password) => {
   }
 };
 
-module.exports = { login, register };
+// 🔐 LOGIN com Google
+const googleLogin = async (googleToken) => {
+  const ticket = await client.verifyIdToken({
+    idToken: googleToken,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  const payload = ticket.getPayload();
+  const { email, name } = payload;
+
+  console.log('✅ Google login - payload:', payload);
+
+  if (!email) {
+    throw new Error('E-mail não encontrado no token do Google.');
+  }
+
+  let user = await User.findOne({ where: { email } });
+
+  if (!user) {
+    user = await User.create({
+      name,
+      email,
+      password: 'google_login', // simbólico
+    });
+
+    console.log('✅ Novo usuário criado via Google:', user.email);
+  } else {
+    console.log('🔁 Usuário existente acessando via Google:', user.email);
+  }
+
+  const token = generateToken({ id: user.id, email: user.email });
+
+  return {
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    },
+  };
+};
+
+module.exports = { login, register, googleLogin };
