@@ -135,12 +135,13 @@ const Login = () => {
               </p>
             )}
           </form>
-
           <div className="mt-4 flex justify-center">
             <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
               <GoogleLogin
                 onSuccess={async (credentialResponse) => {
                   try {
+                    setLoading(true); // ✅ Ativa o estado de carregamento
+
                     const credential = credentialResponse.credential;
 
                     const response = await api.post('/auth/google-login', { credential });
@@ -153,22 +154,21 @@ const Login = () => {
                     }
 
                     localStorage.setItem('userName', user?.name || 'Usuário');
-
                     navigate('/dashboard');
                   } catch (err) {
                     console.error('Erro no login com Google:', err);
                     alert('Erro ao autenticar com Google');
+                  } finally {
+                    setLoading(false); // ✅ Finaliza o carregamento
                   }
                 }}
                 onError={() => {
                   alert('Erro ao autenticar com Google');
                 }}
               />
-
-
-
             </GoogleOAuthProvider>
           </div>
+
 
 
           <p className="mt-6 text-center text-base text-gray-600">
