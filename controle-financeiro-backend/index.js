@@ -1,6 +1,6 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 
@@ -31,7 +31,7 @@ const accountRoutes = require('./routes/accountRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const incomeRoutes = require('./routes/incomeRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
-const monthlyGoalRoutes = require("./routes/monthlyGoalRoutes");
+const monthlyGoalRoutes = require('./routes/monthlyGoalRoutes');
 
 app.use('/api/transactions', authenticate, transactionRoutes);
 app.use('/api/goals', authenticate, objectiveRoutes);
@@ -44,15 +44,17 @@ app.use('/api/categories', authenticate, categoryRoutes);
 app.use('/api', authenticate, pdfRoutes);
 app.use('/api/records', authenticate, incomeRoutes);
 app.use('/api/invoices', authenticate, invoiceRoutes);
-app.use("/api/monthly-goals", authenticate, monthlyGoalRoutes);
+app.use('/api/monthly-goals', authenticate, monthlyGoalRoutes);
 
-// Banco de dados com retry
-const { sequelize, connectWithRetry } = require('./models');
+// Conexão com o banco
+const { sequelize } = require('./models');
 
 const startServer = async () => {
   try {
-    await connectWithRetry(); // Retry na conexão com o banco
-    await sequelize.sync();   // Sincroniza models normalmente
+    await sequelize.authenticate();
+    console.log('✅ Conectado ao banco de dados');
+
+    await sequelize.sync();
     console.log('🧠 Tabelas sincronizadas com o banco de dados');
 
     const PORT = process.env.PORT || 3001;
