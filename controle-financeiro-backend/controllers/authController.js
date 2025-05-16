@@ -61,4 +61,59 @@ const register = async (req, res) => {
   }
 };
 
+const { OAuth2Client } = require('google-auth-library');
+const jwt = require('jsonwebtoken');
+const { User } = require('../models');
+const generateToken = require('../utils/generateToken');
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+const googleLogin = async (req, res) => {
+  const { credential } = req.body;
+
+  if (!credential) {
+    return res.status(400).json({ message: 'Credencial do Google não fornecida.' });
+  }
+
+  try {
+    // 🔍 Verifica e decodifica token do Google
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { email, name, sub } = payload;
+
+    // 👤 Procura ou cria usuário local
+    let user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      user = await User.create({
+        name,
+        email,
+        password: sub, // 👈 evita campo vazio (não será usada)
+      });
+      console.log('✅ Novo usuário criado via Google:', email);
+    }
+
+    // 🎫 Gera token local JWT
+    const token = generateToken({ id: user.id, email: user.email });
+
+    return res.status(200).json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch (error) {
+    console.error('❌ Erro no login com Google:', error);
+    return res.status(401).json({ message: 'Falha na autenticação com Google' });
+  }
+};
+
+
 module.exports = { login, register };

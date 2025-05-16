@@ -137,25 +137,35 @@ const Login = () => {
           </form>
 
           <div className="mt-4 flex justify-center">
-            <GoogleOAuthProvider clientId="454041816563-vtd5oie4tfaqbqifgbtht68rtvouig66.apps.googleusercontent.com">
+            <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
               <GoogleLogin
-                onSuccess={(credentialResponse) => {
-                  const decoded = jwtDecode(credentialResponse.credential);
-                  console.log("✅ Google Login Success:", decoded);
+                onSuccess={async (credentialResponse) => {
+                  try {
+                    const credential = credentialResponse.credential;
 
-                  const token = credentialResponse.credential;
-                  localStorage.setItem("token", token);
-                  localStorage.setItem("userName", decoded.name || "Usuário");
+                    const response = await api.post('/auth/google', { token: credential });
+                    const { token, user } = response.data;
 
-                  navigate("/dashboard");
+                    if (remember) {
+                      localStorage.setItem('token', token);
+                    } else {
+                      sessionStorage.setItem('token', token);
+                    }
+
+                    localStorage.setItem('userName', user?.name || 'Usuário');
+
+                    navigate('/dashboard');
+                  } catch (err) {
+                    console.error('Erro no login com Google:', err);
+                    alert('Erro ao autenticar com Google');
+                  }
                 }}
                 onError={() => {
-                  console.error("❌ Erro no login com Google");
-                  setError("Erro ao autenticar com o Google.");
+                  alert('Erro ao autenticar com Google');
                 }}
-                width="100%"
-                useOneTap
               />
+
+
 
             </GoogleOAuthProvider>
           </div>

@@ -8,4 +8,7 @@ router.post('/register', authController.register);
 // Rota de login
 router.post('/login', authController.login);
 
+router.post('/google-login', authController.googleLogin);
+
+
 module.exports = router;

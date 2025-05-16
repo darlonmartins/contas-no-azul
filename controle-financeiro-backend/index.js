@@ -49,6 +49,10 @@ app.use('/api/monthly-goals', authenticate, monthlyGoalRoutes);
 // Conexão com o banco
 const { sequelize } = require('./models');
 
+const googleAuthRoutes = require('./routes/googleAuthRoutes');
+app.use('/api/auth/google', googleAuthRoutes);
+
+
 const startServer = async () => {
   try {
     await sequelize.authenticate();
