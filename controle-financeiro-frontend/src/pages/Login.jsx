@@ -143,7 +143,7 @@ const Login = () => {
                   try {
                     const credential = credentialResponse.credential;
 
-                    const response = await api.post('/auth/google', { token: credential });
+                    const response = await api.post('/auth/google-login', { credential });
                     const { token, user } = response.data;
 
                     if (remember) {

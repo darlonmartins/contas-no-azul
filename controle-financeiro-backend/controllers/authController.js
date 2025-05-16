@@ -3,7 +3,7 @@ console.log('🕵️ authService carregado de:', path.resolve(__dirname, '../ser
 
 const authService = require('../services/authService');
 const { createAccount } = require('../services/accountService');
-const { createDefaultCategories } = require('../services/categoryService'); // ✅ novo import
+const { createDefaultCategories } = require('../services/categoryService');
 const { Account } = require('../models');
 
 // Controller de Login
@@ -25,10 +25,8 @@ const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // Cria o usuário
     const user = await authService.register(name, email, password);
 
-    // Impede duplicidade da conta "Carteira"
     const existing = await Account.findOne({
       where: {
         userId: user.id,
@@ -51,7 +49,6 @@ const register = async (req, res) => {
       console.log('⚠️ Conta "Carteira" já existia para o usuário', user.email);
     }
 
-    // ✅ Cria categorias padrão para o novo usuário
     await createDefaultCategories(user.id);
 
     return res.status(201).json(user);
@@ -69,6 +66,8 @@ const generateToken = require('../utils/generateToken');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const googleLogin = async (req, res) => {
+  console.log('📨 Requisição recebida no /google-login:', req.body); // ✅ log de debug
+
   const { credential } = req.body;
 
   if (!credential) {
@@ -76,7 +75,6 @@ const googleLogin = async (req, res) => {
   }
 
   try {
-    // 🔍 Verifica e decodifica token do Google
     const ticket = await client.verifyIdToken({
       idToken: credential,
       audience: process.env.GOOGLE_CLIENT_ID,
@@ -86,19 +84,17 @@ const googleLogin = async (req, res) => {
 
     const { email, name, sub } = payload;
 
-    // 👤 Procura ou cria usuário local
     let user = await User.findOne({ where: { email } });
 
     if (!user) {
       user = await User.create({
         name,
         email,
-        password: sub, // 👈 evita campo vazio (não será usada)
+        password: sub, // apenas para preencher o campo
       });
       console.log('✅ Novo usuário criado via Google:', email);
     }
 
-    // 🎫 Gera token local JWT
     const token = generateToken({ id: user.id, email: user.email });
 
     return res.status(200).json({
@@ -115,6 +111,4 @@ const googleLogin = async (req, res) => {
   }
 };
 
-
 module.exports = { login, register, googleLogin };
-
