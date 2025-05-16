@@ -5,14 +5,13 @@ const authService = require('../services/authService');
 const { createAccount } = require('../services/accountService');
 const { createDefaultCategories } = require('../services/categoryService');
 const { Account } = require('../models');
+const setupNovoUsuario = require('../services/setupNovoUsuario');
 
 // Controller de Login
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
     const result = await authService.login(email, password);
-
     return res.status(200).json(result);
   } catch (error) {
     console.error('🔴 Erro no login:', error);
@@ -24,7 +23,6 @@ const login = async (req, res) => {
 const register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-
     const user = await authService.register(name, email, password);
 
     const existing = await Account.findOne({
@@ -50,7 +48,6 @@ const register = async (req, res) => {
     }
 
     await createDefaultCategories(user.id);
-
     return res.status(201).json(user);
   } catch (error) {
     console.error('🔴 Erro ao registrar usuário:', error);
@@ -65,8 +62,9 @@ const generateToken = require('../utils/generateToken');
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+// Login via Google
 const googleLogin = async (req, res) => {
-  console.log('📨 Requisição recebida no /google-login:', req.body); // ✅ log de debug
+  console.log('📨 Requisição recebida no /google-login:', req.body);
 
   const { credential } = req.body;
 
@@ -81,18 +79,22 @@ const googleLogin = async (req, res) => {
     });
 
     const payload = ticket.getPayload();
-
     const { email, name, sub } = payload;
 
     let user = await User.findOne({ where: { email } });
 
-    if (!user) {
+    const isNewUser = !user;
+
+    if (isNewUser) {
       user = await User.create({
         name,
         email,
-        password: sub, // apenas para preencher o campo
+        password: sub,
       });
       console.log('✅ Novo usuário criado via Google:', email);
+
+      // ⚙️ Roda rotina padrão de configuração
+      await setupNovoUsuario(user);
     }
 
     const token = generateToken({ id: user.id, email: user.email });
