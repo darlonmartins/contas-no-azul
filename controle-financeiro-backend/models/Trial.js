@@ -1,5 +1,6 @@
+// models/Trial.js
 module.exports = (sequelize, DataTypes) => {
-  const Trial = sequelize.define('Trial', {
+  return sequelize.define('Trial', {
     userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -40,6 +41,4 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     timestamps: true
   });
-
-  return Trial;
 };
