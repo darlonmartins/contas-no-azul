@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
 import PublicHeader from '../components/layout/PublicHeader';
 import api from '../services/api';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import jwt_decode from 'jwt-decode';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -50,12 +52,6 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleGoogleLogin = () => {
-    const fakeToken = 'token-google';
-    localStorage.setItem('token', fakeToken);
-    navigate('/dashboard');
   };
 
   return (
@@ -139,13 +135,30 @@ const Login = () => {
             )}
           </form>
 
-          <button
-            onClick={handleGoogleLogin}
-            className="mt-4 w-full border border-gray-300 hover:bg-gray-100 text-gray-800 py-2 rounded-lg font-medium flex justify-center items-center gap-2"
-          >
-            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
-            Entrar com Google
-          </button>
+          <div className="mt-4 flex justify-center">
+            <GoogleOAuthProvider clientId="454041816563-vtd5oie4tfaqbqifgbtht68rtvouig66.apps.googleusercontent.com">
+              <GoogleLogin
+                onSuccess={(credentialResponse) => {
+                  const decoded = jwt_decode(credentialResponse.credential);
+                  console.log("✅ Google Login Success:", decoded);
+
+                  const token = credentialResponse.credential;
+                  localStorage.setItem("token", token);
+                  localStorage.setItem("userName", decoded.name || "Usuário");
+
+                  // Redireciona após login
+                  navigate("/dashboard");
+                }}
+                onError={() => {
+                  console.error("❌ Erro no login com Google");
+                  setError("Erro ao autenticar com o Google.");
+                }}
+                width="100%"
+                useOneTap
+              />
+            </GoogleOAuthProvider>
+          </div>
+
 
           <p className="mt-6 text-center text-base text-gray-600">
             Não tem uma conta?{' '}
