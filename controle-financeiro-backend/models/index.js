@@ -25,6 +25,8 @@ const Card = require('./Card')(sequelize);
 const Account = require('./Account')(sequelize, Sequelize.DataTypes);
 const Invoice = require('./Invoice')(sequelize, Sequelize.DataTypes); // ✅ certo
 const MonthlyGoal = require('./MonthlyGoal')(sequelize); // ✅ Adicionado
+const Trial = require('./Trial')(sequelize, Sequelize.DataTypes);
+
 
 // Objeto com todos os models
 const models = {
@@ -35,8 +37,10 @@ const models = {
   Card,
   Account,
   Invoice,
-  MonthlyGoal, // ✅ Registrado aqui
+  MonthlyGoal,
+  Trial, // ✅ Novo model
 };
+
 
 // RELACIONAMENTOS
 User.hasMany(Transaction, { foreignKey: 'userId' });
@@ -62,6 +66,10 @@ MonthlyGoal.belongsTo(User, { foreignKey: 'userId' });
 
 Category.hasMany(MonthlyGoal, { foreignKey: 'categoryId' }); // ✅ relação com categoria
 MonthlyGoal.belongsTo(Category, { foreignKey: 'categoryId' });
+
+User.hasOne(Trial, { foreignKey: 'userId' });
+Trial.belongsTo(User, { foreignKey: 'userId' });
+
 
 // Ativa os métodos associate (se existirem)
 if (typeof Objective.associate === 'function') {
