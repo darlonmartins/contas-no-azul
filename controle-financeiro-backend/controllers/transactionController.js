@@ -681,7 +681,11 @@ const getForecastByCard = async (req, res) => {
     }
 
     const today = new Date();
-    const todayInvoiceMonth = getInvoiceMonth(today.toISOString().slice(0, 10), card.fechamento);
+    const todayStr = today.toISOString().slice(0, 10);
+    const todayInvoiceMonth = getInvoiceMonth(todayStr, card.fechamento);
+
+    console.log(`📤 Buscando parcelas futuras para o cartão: ${cardId}`);
+    console.log(`📆 Hoje: ${todayStr} | Fatura atual: ${todayInvoiceMonth}`);
 
     const allTransactions = await Transaction.findAll({
       where: {
@@ -691,12 +695,17 @@ const getForecastByCard = async (req, res) => {
       }
     });
 
+    console.log(`📊 Total de transações encontradas: ${allTransactions.length}`);
+
     const futureInstallments = allTransactions.filter(tx => {
-      const txInvoiceMonth = getInvoiceMonth(tx.date, card.fechamento);
-      return txInvoiceMonth > todayInvoiceMonth;
+      const txMonth = getInvoiceMonth(tx.date, card.fechamento);
+      return txMonth > todayInvoiceMonth;
     });
 
     const total = futureInstallments.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
+
+    console.log(`📦 Parcelas futuras detectadas: ${futureInstallments.length}`);
+    console.log(`💰 Valor total das futuras: ${total.toFixed(2)}`);
 
     return res.json({ total, forecast: futureInstallments });
   } catch (err) {
