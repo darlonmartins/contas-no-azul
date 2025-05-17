@@ -43,16 +43,21 @@ const CardDetails = () => {
 
   useEffect(() => { fetchCards(); }, []);
 
-  useEffect(() => {
-    if (selectedCardId && month) {
-      fetchTransactions();
-      fetchFutureChart();
-      fetchFutureInstallments();
-      fetchTotalSpentCard();
-      checkOrCreateInvoice();
-      fetchInvoiceInfo();
-    }
-  }, [selectedCardId, month]);
+ useEffect(() => {
+  if (selectedCardId && month) {
+    fetchTransactions();
+    fetchFutureChart();
+    fetchTotalSpentCard();
+    checkOrCreateInvoice();
+    fetchInvoiceInfo();
+  }
+}, [selectedCardId, month]);
+
+useEffect(() => {
+  if (selectedCardId) {
+    fetchFutureInstallments(); // ← essa chamada isolada aqui
+  }
+}, [selectedCardId]);
 
   useEffect(() => {
     if (!selectedCard?.id && cards.length > 0) {
@@ -131,14 +136,22 @@ const CardDetails = () => {
     }
   };
 
-  const fetchFutureInstallments = async () => {
-    try {
-      const res = await api.get(`/transactions/card/${selectedCardId}/forecast`);
-      setFutureInstallmentsTotal(parseFloat(res.data.total || 0));
-    } catch (err) {
-      console.error("Erro ao buscar parcelas futuras:", err);
-    }
-  };
+const fetchFutureInstallments = async () => {
+  if (!selectedCardId) {
+    console.warn("🚫 selectedCardId não definido ao buscar parcelas futuras");
+    return;
+  }
+
+  try {
+    console.log("📤 Buscando parcelas futuras para:", selectedCardId);
+    const res = await api.get(`/transactions/card/${selectedCardId}/forecast`);
+    console.log("📥 Total parcelas futuras recebidas:", res.data.total);
+    setFutureInstallmentsTotal(parseFloat(res.data.total || 0));
+  } catch (err) {
+    console.error("Erro ao buscar parcelas futuras:", err);
+  }
+};
+
 
 
   const fetchTotalSpentCard = async () => {
