@@ -32,11 +32,17 @@ const Accounts = () => {
       } else {
         await api.post("/accounts", accountData);
       }
-      fetchAccounts();
+
+      await fetchAccounts();
+
+      // ✅ Limpa a conta em edição, mas mantém a modal aberta para exibir sucesso
+      setEditingAccount(null);
+      // ❌ NÃO FECHAR A MODAL AQUI — isso cancela a tela de sucesso
     } catch (err) {
       console.error("Erro ao salvar conta:", err);
     }
   };
+
 
   const handleDelete = async () => {
     try {

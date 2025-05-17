@@ -33,6 +33,8 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
 
 
   useEffect(() => {
+    if (success) return; // ✅ evita reset do formulário ao salvar com sucesso
+
     if (editingAccount) {
       setForm({
         name: editingAccount.name || "",
@@ -48,8 +50,8 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
     } else {
       resetForm();
     }
-    setSuccess(false);
   }, [editingAccount]);
+
 
 
   const handleChange = (e) => {
