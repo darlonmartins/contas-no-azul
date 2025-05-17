@@ -11,7 +11,6 @@ const Accounts = () => {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [loading, setLoading] = useState(true);
 
-
   const fetchAccounts = async () => {
     try {
       setLoading(true);
@@ -24,7 +23,6 @@ const Accounts = () => {
     }
   };
 
-
   const handleCreate = async (accountData) => {
     try {
       if (editingAccount) {
@@ -35,14 +33,12 @@ const Accounts = () => {
 
       await fetchAccounts();
 
-      // ✅ Limpa a conta em edição, mas mantém a modal aberta para exibir sucesso
+      // ✅ limpa apenas a edição, mantendo a modal aberta para exibir sucesso
       setEditingAccount(null);
-      // ❌ NÃO FECHAR A MODAL AQUI — isso cancela a tela de sucesso
     } catch (err) {
       console.error("Erro ao salvar conta:", err);
     }
   };
-
 
   const handleDelete = async () => {
     try {
@@ -121,7 +117,6 @@ const Accounts = () => {
         </div>
       </li>
     );
-
   };
 
   if (loading) {
@@ -156,7 +151,6 @@ const Accounts = () => {
         </button>
       </div>
 
-      {/* Card de Saldo Total */}
       {accounts.length > 0 && (
         <div className="bg-green-100 border border-green-300 text-green-800 px-6 py-4 rounded-xl shadow w-[330px]">
           <div className="flex items-center gap-3">
@@ -175,7 +169,6 @@ const Accounts = () => {
           </div>
         </div>
       )}
-
 
       {mainAccount && (
         <div>
