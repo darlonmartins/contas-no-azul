@@ -167,14 +167,12 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
       title,
       amount: (() => {
         const editedAmount = parseAmountToFloat(amount);
-        if (!isEditing && isInstallment && totalInstallments > 1) {
-          return (editedAmount / totalInstallments).toFixed(2);
-        }
         if (isEditing && isInstallment && transaction?.totalInstallments > 1) {
           return showConfirmUpdate ? editedAmount * totalInstallments : editedAmount;
         }
         return editedAmount;
       })(),
+
 
 
       type: convertType(type), // ✅ tipo ajustado para 'despesa', 'ganho', etc.
