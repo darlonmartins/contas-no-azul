@@ -30,8 +30,10 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // ✅ Correção aqui: só altera form se não estiver na tela de sucesso
   useEffect(() => {
-    if (!isOpen || success) return;
+    if (!isOpen) return;
+    if (success) return;
 
     if (editingAccount) {
       setForm({
@@ -46,9 +48,16 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
       });
       setIsEditing(true);
     } else {
-      resetForm();
+      setForm({
+        name: "",
+        bank: "",
+        type: "corrente",
+        isMain: false,
+        saldoAtual: "",
+      });
+      setIsEditing(false);
     }
-  }, [editingAccount, isOpen, success]);
+  }, [editingAccount, isOpen]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
