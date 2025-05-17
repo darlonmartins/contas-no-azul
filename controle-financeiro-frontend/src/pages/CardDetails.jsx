@@ -63,8 +63,8 @@ const CardDetails = () => {
       }
     }
   }, [cards, selectedCardId, selectedCard?.id]);
-  
-  
+
+
 
   const fetchCards = async () => {
     try {
@@ -84,7 +84,7 @@ const CardDetails = () => {
       return [];
     }
   };
-  
+
 
   const loadSelectedCard = async () => {
     try {
@@ -98,7 +98,7 @@ const CardDetails = () => {
       console.error("Erro ao carregar cartão atualizado:", err);
     }
   };
-  
+
 
   const fetchTransactions = async () => {
     try {
@@ -139,6 +139,7 @@ const CardDetails = () => {
       console.error("Erro ao buscar parcelas futuras:", err);
     }
   };
+
 
   const fetchTotalSpentCard = async () => {
     try {
@@ -497,84 +498,84 @@ const CardDetails = () => {
       </div>
 
       {isModalOpen && (
-  <TransactionModal
-    isOpen={isModalOpen}
-    onClose={() => {
-      setIsModalOpen(false);
-      setEditingTransaction(null);
-    }}
-    transaction={editingTransaction}
-    initialType="despesa_cartao"
-    defaultCardId={selectedCardId}
-    onSave={async () => {
-      await fetchTransactions();
-      await fetchFutureChart();
-      await fetchFutureInstallments();
-      await fetchTotalSpentCard();
+        <TransactionModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingTransaction(null);
+          }}
+          transaction={editingTransaction}
+          initialType="despesa_cartao"
+          defaultCardId={selectedCardId}
+          onSave={async () => {
+            await fetchTransactions();
+            await fetchFutureChart();
+            await fetchFutureInstallments();
+            await fetchTotalSpentCard();
 
-      const cardsAtualizados = await fetchCards();
-      const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
-      if (atualizado) setSelectedCard(atualizado);
-    }}
-    refresh={() => {
-      fetchTransactions();
-      fetchFutureChart();
-      fetchFutureInstallments();
-    }}
-  />
-)}
+            const cardsAtualizados = await fetchCards();
+            const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
+            if (atualizado) setSelectedCard(atualizado);
+          }}
+          refresh={() => {
+            fetchTransactions();
+            fetchFutureChart();
+            fetchFutureInstallments();
+          }}
+        />
+      )}
 
-{confirmDeleteId && (
-  <ConfirmDeleteModal
-    isOpen={!!confirmDeleteId}
-    onClose={() => setConfirmDeleteId(null)}
-    onConfirm={handleDelete}
-    message="Tem certeza que deseja excluir esta transação?"
-  />
-)}
+      {confirmDeleteId && (
+        <ConfirmDeleteModal
+          isOpen={!!confirmDeleteId}
+          onClose={() => setConfirmDeleteId(null)}
+          onConfirm={handleDelete}
+          message="Tem certeza que deseja excluir esta transação?"
+        />
+      )}
 
-{isUnmarkModalOpen && (
-  <ConfirmInvoiceModal
-    isOpen={isUnmarkModalOpen}
-    onClose={() => setIsUnmarkModalOpen(false)}
-    onConfirm={handleUnmarkInvoice}
-    message="Tem certeza que deseja marcar esta fatura como NÃO paga?"
-  />
-)}
+      {isUnmarkModalOpen && (
+        <ConfirmInvoiceModal
+          isOpen={isUnmarkModalOpen}
+          onClose={() => setIsUnmarkModalOpen(false)}
+          onConfirm={handleUnmarkInvoice}
+          message="Tem certeza que deseja marcar esta fatura como NÃO paga?"
+        />
+      )}
 
-{isPayModalOpen && (
-  <PayInvoiceModal
-  isOpen={isPayModalOpen}
-  onClose={() => setIsPayModalOpen(false)}
-  invoice={invoice}
-  onSuccess={async () => {
-    try {
-      // Aguarda um pequeno tempo para garantir que o banco terminou a atualização
-      await new Promise((resolve) => setTimeout(resolve, 600));
-  
-      const cardsAtualizados = await fetchCards();
-      const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
-  
-      if (atualizado) {
-        console.log("💳 Cartão atualizado após pagamento:", atualizado); // ✅ log aqui
-        setSelectedCard(atualizado);
-      } else {
-        console.warn("⚠️ Cartão não encontrado após pagamento.");
-      }
-  
-      await fetchTotalSpentCard();
-      await checkOrCreateInvoice();
-      await fetchInvoiceInfo();
-  
-      toast.success("Fatura marcada como paga!");
-    } catch (err) {
-      console.error("❌ Erro ao atualizar dados após pagamento da fatura:", err);
-    }
-  }}
-  
-/>
+      {isPayModalOpen && (
+        <PayInvoiceModal
+          isOpen={isPayModalOpen}
+          onClose={() => setIsPayModalOpen(false)}
+          invoice={invoice}
+          onSuccess={async () => {
+            try {
+              // Aguarda um pequeno tempo para garantir que o banco terminou a atualização
+              await new Promise((resolve) => setTimeout(resolve, 600));
 
-)}
+              const cardsAtualizados = await fetchCards();
+              const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
+
+              if (atualizado) {
+                console.log("💳 Cartão atualizado após pagamento:", atualizado); // ✅ log aqui
+                setSelectedCard(atualizado);
+              } else {
+                console.warn("⚠️ Cartão não encontrado após pagamento.");
+              }
+
+              await fetchTotalSpentCard();
+              await checkOrCreateInvoice();
+              await fetchInvoiceInfo();
+
+              toast.success("Fatura marcada como paga!");
+            } catch (err) {
+              console.error("❌ Erro ao atualizar dados após pagamento da fatura:", err);
+            }
+          }}
+
+        />
+
+      )}
 
 
     </div>
