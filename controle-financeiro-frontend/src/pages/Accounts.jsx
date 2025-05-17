@@ -33,8 +33,11 @@ const Accounts = () => {
 
       await fetchAccounts();
 
-      // ✅ limpa apenas a edição, mantendo a modal aberta para exibir sucesso
+      // ✅ Apenas limpa o editingAccount, mantém a modal aberta
       setEditingAccount(null);
+
+      // ❌ NÃO fecha a modal aqui, pois queremos mostrar a confirmação nela
+      // setIsModalOpen(false);
     } catch (err) {
       console.error("Erro ao salvar conta:", err);
     }
