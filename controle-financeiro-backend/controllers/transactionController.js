@@ -695,7 +695,6 @@ const getForecastByCard = async (req, res) => {
       },
     });
 
-    // Filtra somente parcelas que pertencem a faturas de meses futuros
     const futuras = forecast.filter(tx => {
       const faturaMes = getInvoiceMonth(tx.date, card.fechamento);
       return faturaMes > monthAtual;
