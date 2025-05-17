@@ -10,7 +10,7 @@ const Accounts = () => {
   const [editingAccount, setEditingAccount] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // ✅ Novo estado para evitar reset completo
 
   const fetchAccounts = async (initial = false) => {
     try {
@@ -41,8 +41,7 @@ const Accounts = () => {
         await api.post("/accounts", accountData);
       }
 
-      // Comentado temporariamente para teste
-      // await fetchAccounts(false);
+      await fetchAccounts(false); // ✅ apenas atualiza os dados sem recarregar a página inteira
     } catch (err) {
       console.error("Erro ao salvar conta:", err);
     }
@@ -59,7 +58,7 @@ const Accounts = () => {
   };
 
   useEffect(() => {
-    fetchAccounts(true);
+    fetchAccounts(true); // ✅ carregamento inicial com loading real
   }, []);
 
   const mainAccount = accounts.find((acc) => acc.isMain);
@@ -195,6 +194,7 @@ const Accounts = () => {
       </div>
 
       <AccountModal
+        key={editingAccount ? editingAccount.id : "new"}
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
