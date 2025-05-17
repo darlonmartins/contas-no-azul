@@ -40,6 +40,7 @@ const CardDetails = () => {
   const [selectedCard, setSelectedCard] = useState({});
   const [totalFuture, setTotalFuture] = useState(0);
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => { fetchCards(); }, []);
 
@@ -198,11 +199,11 @@ const CardDetails = () => {
   const handleDelete = async () => {
     if (!confirmDeleteId) return;
 
-    // Fecha a modal imediatamente
-    setConfirmDeleteId(null);
+    setIsDeleting(true); // ⏳ Mostra carregamento
 
     try {
       await api.delete(`/transactions/${confirmDeleteId}`);
+      toast.success("Transação excluída com sucesso");
       await fetchTransactions();
       await fetchFutureChart();
       await fetchFutureInstallments();
@@ -213,8 +214,12 @@ const CardDetails = () => {
     } catch (err) {
       console.error("Erro ao excluir transação:", err);
       toast.error("Erro ao excluir transação");
+    } finally {
+      setIsDeleting(false);       // ⛔ Remove o loading
+      setConfirmDeleteId(null);   // ✅ Fecha a modal depois de tudo
     }
   };
+
   const cardLimit = selectedCard.limit || 0;
   const cardAvailable = selectedCard.availableLimit || 0;
   const totalSpentMonth = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
@@ -543,8 +548,9 @@ const CardDetails = () => {
       {confirmDeleteId && (
         <ConfirmDeleteModal
           isOpen={!!confirmDeleteId}
-          onClose={() => setConfirmDeleteId(null)}
           onConfirm={handleDelete}
+          onCancel={() => setConfirmDeleteId(null)}
+          loading={isDeleting}
           message="Tem certeza que deseja excluir esta transação?"
         />
       )}
