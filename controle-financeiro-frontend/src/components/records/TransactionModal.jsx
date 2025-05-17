@@ -167,11 +167,16 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
       title,
       amount: (() => {
         const editedAmount = parseAmountToFloat(amount);
+        if (!isEditing && isInstallment && totalInstallments > 1) {
+          return (editedAmount / totalInstallments).toFixed(2);
+        }
         if (isEditing && isInstallment && transaction?.totalInstallments > 1) {
           return showConfirmUpdate ? editedAmount * totalInstallments : editedAmount;
         }
         return editedAmount;
       })(),
+
+
       type: convertType(type), // ✅ tipo ajustado para 'despesa', 'ganho', etc.
       date,
       isInstallment,
@@ -234,7 +239,7 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
+      <div className="bg-white rounded-lg shadow-lg w-[95%] max-w-lg max-h-[95vh] overflow-y-auto p-6 relative">
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-xl font-bold"
@@ -266,65 +271,65 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
             </div>
           </div>
         ) : (
-  <form onSubmit={handleSubmit} className="space-y-4">
-    <h2 className="text-lg font-bold">
-      {isEditing
-        ? "Editar Transação"
-        : type === "income"
-        ? "Registrar Ganho"
-        : type === "transfer"
-        ? "Registrar Transferência"
-        : type === "despesa_cartao"
-        ? "Registrar Despesa com Cartão"
-        : "Registrar Despesa"}
-    </h2>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <h2 className="text-lg font-bold">
+              {isEditing
+                ? "Editar Transação"
+                : type === "income"
+                  ? "Registrar Ganho"
+                  : type === "transfer"
+                    ? "Registrar Transferência"
+                    : type === "despesa_cartao"
+                      ? "Registrar Despesa com Cartão"
+                      : "Registrar Despesa"}
+            </h2>
 
-    <div>
-      <label className="block text-sm font-medium">Título</label>
-      <input
-        type="text"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-        className="w-full border px-3 py-2 rounded"
-      />
-    </div>
+            <div>
+              <label className="block text-sm font-medium">Título</label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
 
-    <div>
-      <label className="block text-sm font-medium">Valor (R$)</label>
-      <input
-        type="text"
-        inputMode="numeric"
-        className="w-full border px-3 py-2 rounded"
-        value={amount}
-        onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
-        required
-        placeholder="Ex: 500,00"
-      />
+            <div>
+              <label className="block text-sm font-medium">Valor (R$)</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                className="w-full border px-3 py-2 rounded"
+                value={amount}
+                onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
+                required
+                placeholder="Ex: 500,00"
+              />
 
-      {isInstallment && totalInstallments > 1 && (
-        <div className="text-sm text-gray-700 mt-2 space-y-1">
-          <p>
-            <span className="font-semibold">Valor por parcela:</span>{" "}
-            R$ {(
-              parseAmountToFloat(amount) / totalInstallments
-            ).toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </p>
+              {isInstallment && totalInstallments > 1 && (
+                <div className="text-sm text-gray-700 mt-2 space-y-1">
+                  <p>
+                    <span className="font-semibold">Valor por parcela:</span>{" "}
+                    R$ {(
+                      parseAmountToFloat(amount) / totalInstallments
+                    ).toLocaleString("pt-BR", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </p>
 
-          {isEditing && originalTotalAmount && (
-            <p>
-              <span className="font-semibold">Valor total da compra original:</span>{" "}
-              R$ {originalTotalAmount.toLocaleString("pt-BR", {
-                minimumFractionDigits: 2,
-              })}
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+                  {isEditing && originalTotalAmount && (
+                    <p>
+                      <span className="font-semibold">Valor total da compra original:</span>{" "}
+                      R$ {originalTotalAmount.toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                      })}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div>
               <label className="block text-sm font-medium">Data</label>
