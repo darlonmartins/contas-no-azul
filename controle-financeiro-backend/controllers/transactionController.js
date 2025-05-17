@@ -722,23 +722,28 @@ const getMonthlyForecastByCard = async (req, res) => {
         cardId,
         userId,
         type: "despesa_cartao",
+        date: { [Op.gte]: today }, // traz todas a partir de hoje
+        isInstallment: true        // garante que só venha parcelas
       }
     });
 
     const futureMonths = new Map();
 
-    for (const t of forecastTransactions) {
-      const faturaMonth = getInvoiceMonth(t.date, card.fechamento); // ✅ calcula o mês da fatura
-      const currentTotal = futureMonths.get(faturaMonth) || 0;
-      futureMonths.set(faturaMonth, currentTotal + parseFloat(t.amount));
-    }
+    // Agrupa por mês (baseado na data da parcela)
+    forecastTransactions.forEach((t) => {
+      const monthKey = t.date.slice(0, 7); // "2025-08"
+      const currentTotal = futureMonths.get(monthKey) || 0;
+      futureMonths.set(monthKey, currentTotal + parseFloat(t.amount));
+    });
 
     const months = [];
     const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
+    // Garante no mínimo 6 meses
     for (let i = 0; i < 6; i++) {
       const future = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + i, 1);
       const monthStr = future.toISOString().slice(0, 7);
+
       months.push({
         month: monthStr,
         total: Number((futureMonths.get(monthStr) || 0).toFixed(2)),
@@ -751,6 +756,7 @@ const getMonthlyForecastByCard = async (req, res) => {
     res.status(500).json({ message: 'Erro ao buscar previsão mensal' });
   }
 };
+
 
 
 module.exports = {
