@@ -4,19 +4,20 @@ const getCardBillingPeriod = (monthString, fechamento) => {
   }
 
   const [year, month] = monthString.split("-");
-  const monthNum = parseInt(month, 10) - 1; // mês 0-indexado
+  const baseYear = parseInt(year, 10);
+  const baseMonth = parseInt(month, 10) - 1; // 0-indexado (jan = 0)
 
-  // Data de fechamento do mês atual
-  const fechamentoAtual = new Date(year, monthNum, fechamento);
-  fechamentoAtual.setHours(23, 59, 59, 999);
+  // 🔹 Fechamento da fatura de MAIO → dia 10/05 às 23:59:59
+  const fechamentoAtual = new Date(baseYear, baseMonth, fechamento, 23, 59, 59, 999);
 
-  // Data de início = dia seguinte ao fechamento anterior
+  // 🔹 Início: dia seguinte ao fechamento do mês anterior → 11/04 às 00:00:00
   const fechamentoAnterior = new Date(fechamentoAtual);
   fechamentoAnterior.setMonth(fechamentoAnterior.getMonth() - 1);
   fechamentoAnterior.setDate(fechamento + 1);
   fechamentoAnterior.setHours(0, 0, 0, 0);
 
-  return [fechamentoAnterior.toISOString(), fechamentoAtual.toISOString()];
+  return [
+    fechamentoAnterior.toISOString(),
+    fechamentoAtual.toISOString()
+  ];
 };
-
-module.exports = { getCardBillingPeriod };
