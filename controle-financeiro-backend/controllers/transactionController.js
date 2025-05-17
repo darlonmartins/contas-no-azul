@@ -678,22 +678,32 @@ const getForecastByCard = async (req, res) => {
   }
 
   try {
+    const card = await Card.findByPk(cardId);
+    if (!card || card.userId !== userId) {
+      return res.status(404).json({ message: "Cartão não encontrado ou não pertence ao usuário." });
+    }
+
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    const monthAtual = getInvoiceMonth(today.toISOString().split("T")[0], card.fechamento);
 
     const forecast = await Transaction.findAll({
       where: {
         cardId,
         userId,
         type: 'despesa_cartao',
-        installmentNumber: { [Op.gt]: 1 }, // considera todas as parcelas futuras
-        date: { [Op.gte]: todayStr },       // e a partir de hoje
+        installmentNumber: { [Op.gt]: 1 }, // só parcelas a partir da 2ª
       },
     });
 
-    const total = forecast.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
+    // Filtra somente parcelas que pertencem a faturas de meses futuros
+    const futuras = forecast.filter(tx => {
+      const faturaMes = getInvoiceMonth(tx.date, card.fechamento);
+      return faturaMes > monthAtual;
+    });
 
-    res.json({ total, forecast });
+    const total = futuras.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
+
+    res.json({ total, forecast: futuras });
   } catch (err) {
     console.error('Erro ao buscar parcelas futuras do cartão:', err);
     res.status(500).json({ message: 'Erro interno ao buscar parcelas futuras.' });
