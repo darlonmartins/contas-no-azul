@@ -672,10 +672,7 @@ const getTransactionsByCardAndMonth = async (req, res) => {
 const getForecastByCard = async (req, res) => {
   const { cardId } = req.params;
   const userId = req.user.id;
-
-  if (!cardId || isNaN(Number(cardId))) {
-    return res.status(400).json({ message: "ID do cartão inválido." });
-  }
+  const getInvoiceMonth = require("../utils/getInvoiceMonth");
 
   try {
     const card = await Card.findByPk(cardId);
@@ -684,29 +681,29 @@ const getForecastByCard = async (req, res) => {
     }
 
     const hoje = new Date();
-    const mesAtual = require('../utils/getInvoiceMonth')(hoje.toISOString().slice(0, 10), card.fechamento);
+    const mesAtual = getInvoiceMonth(hoje.toISOString().slice(0, 10), card.fechamento);
 
     const transacoes = await Transaction.findAll({
       where: {
-        cardId,
         userId,
+        cardId,
         type: "despesa_cartao"
       }
     });
 
-    const parcelasFuturas = transacoes.filter(tx => {
-      const mesFatura = require('../utils/getInvoiceMonth')(tx.date, card.fechamento);
+    const futuras = transacoes.filter(tx => {
+      const mesFatura = getInvoiceMonth(tx.date, card.fechamento);
       return mesFatura > mesAtual;
     });
 
-    const total = parcelasFuturas.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
-    res.json({ total, forecast: parcelasFuturas });
+    const total = futuras.reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+
+    res.json({ total, forecast: futuras });
   } catch (err) {
     console.error("Erro ao buscar parcelas futuras do cartão:", err);
     res.status(500).json({ message: "Erro interno ao buscar parcelas futuras." });
   }
 };
-
 
 
 
