@@ -196,29 +196,34 @@ const CardDetails = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirmDeleteId) return;
+const handleDelete = async () => {
+  if (!confirmDeleteId) return;
 
-    setIsDeleting(true); // ⏳ Mostra carregamento
+  setIsDeleting(true);
 
-    try {
-      await api.delete(`/transactions/${confirmDeleteId}`);
-      toast.success("Transação excluída com sucesso");
-      await fetchTransactions();
-      await fetchFutureChart();
-      await fetchFutureInstallments();
-      await fetchTotalSpentCard();
-      await loadSelectedCard();
-      await checkOrCreateInvoice();
-      await fetchInvoiceInfo();
-    } catch (err) {
-      console.error("Erro ao excluir transação:", err);
-      toast.error("Erro ao excluir transação");
-    } finally {
-      setIsDeleting(false);       // ⛔ Remove o loading
-      setConfirmDeleteId(null);   // ✅ Fecha a modal depois de tudo
-    }
-  };
+  try {
+    await api.delete(`/transactions/${confirmDeleteId}`);
+    toast.success("Transação excluída com sucesso");
+
+    // ✅ Fecha a modal imediatamente
+    setConfirmDeleteId(null);
+    setIsDeleting(false);
+
+    // 🔄 Atualizações em segundo plano
+    fetchTransactions();
+    fetchFutureChart();
+    fetchFutureInstallments();
+    fetchTotalSpentCard();
+    loadSelectedCard();
+    checkOrCreateInvoice();
+    fetchInvoiceInfo();
+  } catch (err) {
+    console.error("Erro ao excluir transação:", err);
+    toast.error("Erro ao excluir transação");
+    setIsDeleting(false); // fallback
+  }
+};
+
 
   const cardLimit = selectedCard.limit || 0;
   const cardAvailable = selectedCard.availableLimit || 0;
@@ -546,15 +551,14 @@ const CardDetails = () => {
       )}
 
       {confirmDeleteId && (
-  <ConfirmDeleteModal
-    isOpen={!!confirmDeleteId}
-    onConfirm={handleDelete}
-    onCancel={() => setConfirmDeleteId(null)}
-    loading={isDeleting}
-    cardName="esta transação" // ✅ este campo é necessário para exibir corretamente
-  />
-)}
-
+        <ConfirmDeleteModal
+          isOpen={!!confirmDeleteId}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDeleteId(null)}
+          loading={isDeleting}
+          message="Tem certeza que deseja excluir esta transação?"
+        />
+      )}
 
       {isUnmarkModalOpen && (
         <ConfirmInvoiceModal
