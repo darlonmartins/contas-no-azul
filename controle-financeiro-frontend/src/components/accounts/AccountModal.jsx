@@ -31,25 +31,30 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
   const [loading, setLoading] = useState(false);
 
   // ✅ Correção aqui: só altera form se não estiver na tela de sucesso
- useEffect(() => {
-  if (!isOpen || success) return;
+  useEffect(() => {
+    if (!isOpen) return;
 
-  if (editingAccount) {
-    setForm({
-      name: editingAccount.name || "",
-      bank: editingAccount.bank || "",
-      type: editingAccount.type || "corrente",
-      isMain: editingAccount.isMain || false,
-      saldoAtual: editingAccount.saldoAtual?.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      }) || "",
-    });
-    setIsEditing(true);
-  } else {
-    resetForm();
-  }
-}, [editingAccount, isOpen, success]);
+    // ⛔️ Se está em sucesso e não está editando, não reseta o formulário
+    if (success && !editingAccount) return;
+
+    // ✅ Popular dados se estiver editando
+    if (editingAccount) {
+      setForm({
+        name: editingAccount.name || "",
+        bank: editingAccount.bank || "",
+        type: editingAccount.type || "corrente",
+        isMain: editingAccount.isMain || false,
+        saldoAtual: editingAccount.saldoAtual?.toLocaleString("pt-BR", {
+          style: "currency",
+          currency: "BRL",
+        }) || "",
+      });
+      setIsEditing(true);
+    } else {
+      resetForm(); // nova criação
+    }
+  }, [editingAccount, isOpen]);
+
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -178,9 +183,8 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
                           <span className="text-gray-400">Selecione um banco</span>
                         )}
                         <svg
-                          className={`w-4 h-4 transform transition-transform ${
-                            showBanks ? "rotate-180" : "rotate-0"
-                          }`}
+                          className={`w-4 h-4 transform transition-transform ${showBanks ? "rotate-180" : "rotate-0"
+                            }`}
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="2"
@@ -259,15 +263,14 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className={`w-full ${
-                      loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
-                    } text-white py-2 rounded font-medium mt-2`}
+                    className={`w-full ${loading ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
+                      } text-white py-2 rounded font-medium mt-2`}
                   >
                     {loading
                       ? "Salvando..."
                       : editingAccount
-                      ? "Atualizar Conta"
-                      : "Adicionar Conta"}
+                        ? "Atualizar Conta"
+                        : "Adicionar Conta"}
                   </button>
                 </form>
               </>
