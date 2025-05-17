@@ -43,21 +43,21 @@ const CardDetails = () => {
 
   useEffect(() => { fetchCards(); }, []);
 
- useEffect(() => {
-  if (selectedCardId && month) {
-    fetchTransactions();
-    fetchFutureChart();
-    fetchTotalSpentCard();
-    checkOrCreateInvoice();
-    fetchInvoiceInfo();
-  }
-}, [selectedCardId, month]);
+  useEffect(() => {
+    if (selectedCardId && month) {
+      fetchTransactions();
+      fetchFutureChart();
+      fetchTotalSpentCard();
+      checkOrCreateInvoice();
+      fetchInvoiceInfo();
+    }
+  }, [selectedCardId, month]);
 
-useEffect(() => {
-  if (selectedCardId) {
-    fetchFutureInstallments(); // ← essa chamada isolada aqui
-  }
-}, [selectedCardId]);
+  useEffect(() => {
+    if (selectedCardId) {
+      fetchFutureInstallments(); // ← essa chamada isolada aqui
+    }
+  }, [selectedCardId]);
 
   useEffect(() => {
     if (!selectedCard?.id && cards.length > 0) {
@@ -136,16 +136,16 @@ useEffect(() => {
     }
   };
 
-const fetchFutureInstallments = async () => {
-  try {
-    const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
-      params: { month }
-    });
-    setFutureInstallmentsTotal(parseFloat(res.data.total || 0));
-  } catch (err) {
-    console.error("Erro ao buscar parcelas futuras:", err);
-  }
-};
+  const fetchFutureInstallments = async () => {
+    try {
+      const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
+        params: { month }
+      });
+      setFutureInstallmentsTotal(parseFloat(res.data.total || 0));
+    } catch (err) {
+      console.error("Erro ao buscar parcelas futuras:", err);
+    }
+  };
 
 
 
@@ -197,6 +197,10 @@ const fetchFutureInstallments = async () => {
 
   const handleDelete = async () => {
     if (!confirmDeleteId) return;
+
+    // Fecha a modal imediatamente
+    setConfirmDeleteId(null);
+
     try {
       await api.delete(`/transactions/${confirmDeleteId}`);
       await fetchTransactions();
@@ -206,12 +210,11 @@ const fetchFutureInstallments = async () => {
       await loadSelectedCard();
       await checkOrCreateInvoice();
       await fetchInvoiceInfo();
-      setConfirmDeleteId(null);
     } catch (err) {
       console.error("Erro ao excluir transação:", err);
+      toast.error("Erro ao excluir transação");
     }
   };
-
   const cardLimit = selectedCard.limit || 0;
   const cardAvailable = selectedCard.availableLimit || 0;
   const totalSpentMonth = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
