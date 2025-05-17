@@ -4,32 +4,27 @@ import AccountModal from "../components/accounts/AccountModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { PlusCircle, Trash2, Pencil, Landmark } from "lucide-react";
 
+// ... imports mantidos
 const Accounts = () => {
   const [accounts, setAccounts] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // ✅ Novo estado para evitar reset completo
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchAccounts = async (initial = false) => {
     try {
-      if (initial) {
-        setLoading(true);
-      } else {
-        setRefreshing(true);
-      }
+      if (initial) setLoading(true);
+      else setRefreshing(true);
 
       const response = await api.get("/accounts");
       setAccounts(response.data);
     } catch (err) {
       console.error("Erro ao carregar contas:", err);
     } finally {
-      if (initial) {
-        setLoading(false);
-      } else {
-        setRefreshing(false);
-      }
+      if (initial) setLoading(false);
+      else setRefreshing(false);
     }
   };
 
@@ -41,7 +36,7 @@ const Accounts = () => {
         await api.post("/accounts", accountData);
       }
 
-      await fetchAccounts(false); // ✅ apenas atualiza os dados sem recarregar a página inteira
+      await fetchAccounts(false);
     } catch (err) {
       console.error("Erro ao salvar conta:", err);
     }
@@ -58,7 +53,7 @@ const Accounts = () => {
   };
 
   useEffect(() => {
-    fetchAccounts(true); // ✅ carregamento inicial com loading real
+    fetchAccounts(true);
   }, []);
 
   const mainAccount = accounts.find((acc) => acc.isMain);
@@ -126,20 +121,18 @@ const Accounts = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center p-6 text-gray-600 text-sm animate-fade-in">
-        <svg className="animate-spin h-6 w-6 text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a10 10 0 00-10 10h4z" />
-        </svg>
-        <p>Carregando informações das contas... aguarde um instante.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 relative">
+      {loading && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white bg-opacity-70 z-50">
+          <svg className="animate-spin h-6 w-6 text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a10 10 0 00-10 10h4z" />
+          </svg>
+          <p className="text-sm text-gray-600">Carregando informações das contas...</p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800">
           <Landmark className="w-6 h-6 text-blue-600" />
@@ -220,9 +213,7 @@ const Accounts = () => {
             >
               <Trash2 className="mx-auto text-red-600" size={42} />
               <h3 className="text-lg font-bold">Confirmar exclusão</h3>
-              <p className="text-gray-600">
-                Deseja realmente excluir esta conta?
-              </p>
+              <p className="text-gray-600">Deseja realmente excluir esta conta?</p>
               <div className="flex justify-center gap-4 pt-2">
                 <button
                   onClick={() => setConfirmDeleteId(null)}
@@ -246,3 +237,4 @@ const Accounts = () => {
 };
 
 export default Accounts;
+
