@@ -460,7 +460,7 @@ const getAllTransactions = async (req, res) => {
             }
           ]
         },
-      
+
         { model: Account, as: "fromAccount", attributes: ["name"] },
         { model: Account, as: "toAccount", attributes: ["name"] },
         { model: Card, as: "card", attributes: ["name", "brand"] },
@@ -677,6 +677,10 @@ const getForecastByCard = async (req, res) => {
   const { cardId } = req.params;
   const userId = req.user.id;
 
+  if (!cardId || isNaN(Number(cardId))) {
+    return res.status(400).json({ message: "ID do cartão inválido." });
+  }
+
   try {
     const today = new Date();
     const todayStr = today.toISOString().split("T")[0];
@@ -699,6 +703,7 @@ const getForecastByCard = async (req, res) => {
     res.status(500).json({ message: 'Erro interno ao buscar parcelas futuras.' });
   }
 };
+
 
 
 
