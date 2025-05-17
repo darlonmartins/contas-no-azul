@@ -673,6 +673,7 @@ const getForecastByCard = async (req, res) => {
   const { cardId } = req.params;
   const userId = req.user.id;
   const getInvoiceMonth = require("../utils/getInvoiceMonth");
+  const selectedMonth = req.query.month; // Ex: "2025-05"
 
   try {
     const card = await Card.findByPk(cardId);
@@ -680,12 +681,12 @@ const getForecastByCard = async (req, res) => {
       return res.status(404).json({ message: "Cartão não encontrado ou não pertence ao usuário." });
     }
 
-    const today = new Date();
-    const todayStr = today.toISOString().slice(0, 10);
-    const todayInvoiceMonth = getInvoiceMonth(todayStr, card.fechamento);
+    if (!selectedMonth || !/^\d{4}-\d{2}$/.test(selectedMonth)) {
+      return res.status(400).json({ message: "Parâmetro 'month' inválido ou ausente." });
+    }
 
-    console.log(`📤 Buscando parcelas futuras para o cartão: ${cardId}`);
-    console.log(`📆 Hoje: ${todayStr} | Fatura atual: ${todayInvoiceMonth}`);
+    const baseInvoiceMonth = getInvoiceMonth(`${selectedMonth}-01`, card.fechamento);
+    console.log(`📆 Mês base selecionado: ${selectedMonth} | Fatura base: ${baseInvoiceMonth}`);
 
     const allTransactions = await Transaction.findAll({
       where: {
@@ -695,11 +696,9 @@ const getForecastByCard = async (req, res) => {
       }
     });
 
-    console.log(`📊 Total de transações encontradas: ${allTransactions.length}`);
-
     const futureInstallments = allTransactions.filter(tx => {
-      const txMonth = getInvoiceMonth(tx.date, card.fechamento);
-      return txMonth > todayInvoiceMonth;
+      const txInvoiceMonth = getInvoiceMonth(tx.date, card.fechamento);
+      return txInvoiceMonth > baseInvoiceMonth;
     });
 
     const total = futureInstallments.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
@@ -713,7 +712,6 @@ const getForecastByCard = async (req, res) => {
     return res.status(500).json({ message: "Erro ao buscar parcelas futuras do cartão." });
   }
 };
-
 
 
 

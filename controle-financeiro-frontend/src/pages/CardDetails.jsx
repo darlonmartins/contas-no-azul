@@ -137,20 +137,16 @@ useEffect(() => {
   };
 
 const fetchFutureInstallments = async () => {
-  if (!selectedCardId) {
-    console.warn("🚫 selectedCardId não definido ao buscar parcelas futuras");
-    return;
-  }
-
   try {
-    console.log("📤 Buscando parcelas futuras para:", selectedCardId);
-    const res = await api.get(`/transactions/card/${selectedCardId}/forecast`);
-    console.log("📥 Total parcelas futuras recebidas:", res.data.total);
+    const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
+      params: { month }
+    });
     setFutureInstallmentsTotal(parseFloat(res.data.total || 0));
   } catch (err) {
     console.error("Erro ao buscar parcelas futuras:", err);
   }
 };
+
 
 
 
