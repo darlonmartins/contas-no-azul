@@ -680,10 +680,10 @@ const getForecastByCard = async (req, res) => {
       return res.status(404).json({ message: "Cartão não encontrado ou não pertence ao usuário." });
     }
 
-    const hoje = new Date();
-    const mesAtual = getInvoiceMonth(hoje.toISOString().slice(0, 10), card.fechamento);
+    const today = new Date();
+    const todayInvoiceMonth = getInvoiceMonth(today.toISOString().slice(0, 10), card.fechamento);
 
-    const transacoes = await Transaction.findAll({
+    const allTransactions = await Transaction.findAll({
       where: {
         userId,
         cardId,
@@ -691,19 +691,20 @@ const getForecastByCard = async (req, res) => {
       }
     });
 
-    const futuras = transacoes.filter(tx => {
-      const mesFatura = getInvoiceMonth(tx.date, card.fechamento);
-      return mesFatura > mesAtual;
+    const futureInstallments = allTransactions.filter(tx => {
+      const txInvoiceMonth = getInvoiceMonth(tx.date, card.fechamento);
+      return txInvoiceMonth > todayInvoiceMonth;
     });
 
-    const total = futuras.reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+    const total = futureInstallments.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
 
-    res.json({ total, forecast: futuras });
+    return res.json({ total, forecast: futureInstallments });
   } catch (err) {
-    console.error("Erro ao buscar parcelas futuras do cartão:", err);
-    res.status(500).json({ message: "Erro interno ao buscar parcelas futuras." });
+    console.error("❌ Erro ao buscar parcelas futuras do cartão:", err);
+    return res.status(500).json({ message: "Erro ao buscar parcelas futuras do cartão." });
   }
 };
+
 
 
 
