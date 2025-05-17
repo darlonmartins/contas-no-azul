@@ -687,6 +687,7 @@ const getForecastByCard = async (req, res) => {
         userId,
         type: 'despesa_cartao',
         isInstallment: true,
+        installmentNumber: { [Op.gt]: 1 }, // ✅ SOMENTE parcelas futuras
         date: { [Op.gt]: todayStr },
       },
     });
