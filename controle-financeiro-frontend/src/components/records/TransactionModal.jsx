@@ -33,9 +33,9 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
     today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
     return today.toISOString().split("T")[0];
   };
-  
+
   const [date, setDate] = useState(getLocalToday());
-  
+
   const [isInstallment, setIsInstallment] = useState(false);
   const [totalInstallments, setTotalInstallments] = useState(1);
   const [showConfirmUpdate, setShowConfirmUpdate] = useState(false);
@@ -138,66 +138,66 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
     setSuccess(false);
   };
 
-const handleAmountChange = (e) => {
-  const raw = e.target.value.replace(/\D/g, "");
-  const formatted = formatCurrencyInput(raw);
-  setAmount(formatted);
+  const handleAmountChange = (e) => {
+    const raw = e.target.value.replace(/\D/g, "");
+    const formatted = formatCurrencyInput(raw);
+    setAmount(formatted);
 
-  if (isEditing && isInstallment && transaction.totalInstallments > 1) {
-    const valorTotal = parseFloat(transaction.amount) * transaction.totalInstallments;
-    setOriginalTotalAmount(valorTotal);
-  }
-};
-const convertType = (t) => {
-  switch (t) {
-    case 'income': return 'ganho';
-    case 'expense': return 'despesa';
-    case 'transfer': return 'transferencia';
-    default: return t; // já está correto (ex: 'despesa', 'despesa_cartao')
-  }
-};
+    if (isEditing && isInstallment && transaction.totalInstallments > 1) {
+      const valorTotal = parseFloat(transaction.amount) * transaction.totalInstallments;
+      setOriginalTotalAmount(valorTotal);
+    }
+  };
+  const convertType = (t) => {
+    switch (t) {
+      case 'income': return 'ganho';
+      case 'expense': return 'despesa';
+      case 'transfer': return 'transferencia';
+      default: return t; // já está correto (ex: 'despesa', 'despesa_cartao')
+    }
+  };
 
 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const categoryId = selectedSubcategoryId || selectedCategoryId;
-  
-const payload = {
-  title,
-  amount: (() => {
-    const editedAmount = parseAmountToFloat(amount);
-    if (isEditing && isInstallment && transaction?.totalInstallments > 1) {
-      return showConfirmUpdate ? editedAmount * totalInstallments : editedAmount;
+
+    const payload = {
+      title,
+      amount: (() => {
+        const editedAmount = parseAmountToFloat(amount);
+        if (isEditing && isInstallment && transaction?.totalInstallments > 1) {
+          return showConfirmUpdate ? editedAmount * totalInstallments : editedAmount;
+        }
+        return editedAmount;
+      })(),
+      type: convertType(type), // ✅ tipo ajustado para 'despesa', 'ganho', etc.
+      date,
+      isInstallment,
+      totalInstallments: isInstallment ? totalInstallments : null,
+      categoryId: type === "transfer" ? null : categoryId ? parseInt(categoryId) : null,
+      fromAccountId:
+        ["ganho", "despesa"].includes(convertType(type))
+          ? parseInt(fromAccountId)
+          : convertType(type) === "transferencia"
+            ? parseInt(fromAccountId)
+            : null,
+      toAccountId: convertType(type) === "transferencia" ? parseInt(toAccountId) : null,
+      cardId: convertType(type) === "despesa_cartao" ? parseInt(cardId) : null,
+      ...(isEditing && showConfirmUpdate ? { updateAllInstallments: true } : {}),
+      ...(isEditing && showConfirmFixedExpense ? { updateFixedExpense: true } : {}),
+      ...(!isEditing && isFixedExpense ? { isFixedExpense: true } : {}),
+    };
+
+    console.log("📦 Payload enviado para /transactions:", payload);
+
+    if (!payload.title || !payload.type || !payload.amount || !payload.date) {
+      console.warn("⚠️ Payload incompleto! Verifique os campos obrigatórios.");
     }
-    return editedAmount;
-  })(),
-  type: convertType(type), // ✅ tipo ajustado para 'despesa', 'ganho', etc.
-  date,
-  isInstallment,
-  totalInstallments: isInstallment ? totalInstallments : null,
-  categoryId: type === "transfer" ? null : categoryId ? parseInt(categoryId) : null,
-fromAccountId:
-  ["ganho", "despesa"].includes(convertType(type))
-    ? parseInt(fromAccountId)
-    : convertType(type) === "transferencia"
-    ? parseInt(fromAccountId)
-    : null,
-  toAccountId: convertType(type) === "transferencia" ? parseInt(toAccountId) : null,
-  cardId: convertType(type) === "despesa_cartao" ? parseInt(cardId) : null,
-  ...(isEditing && showConfirmUpdate ? { updateAllInstallments: true } : {}),
-  ...(isEditing && showConfirmFixedExpense ? { updateFixedExpense: true } : {}),
-  ...(!isEditing && isFixedExpense ? { isFixedExpense: true } : {}),
-};
-
-console.log("📦 Payload enviado para /transactions:", payload);
-
-if (!payload.title || !payload.type || !payload.amount || !payload.date) {
-  console.warn("⚠️ Payload incompleto! Verifique os campos obrigatórios.");
-}
 
 
-  
+
     if (isEditing && isInstallment && transaction?.totalInstallments > 1) {
       setPendingPayload(payload);
       setShowConfirmUpdate(true);
@@ -205,7 +205,7 @@ if (!payload.title || !payload.type || !payload.amount || !payload.date) {
       await saveTransaction(payload);
     }
   };
-  
+
   const saveTransaction = async (payload) => {
     try {
       if (isEditing) {
@@ -229,9 +229,9 @@ if (!payload.title || !payload.type || !payload.amount || !payload.date) {
       toast.error("Erro ao salvar transação.");
     }
   };
-  
-  
-  
+
+
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
       <div className="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative">
@@ -266,74 +266,65 @@ if (!payload.title || !payload.type || !payload.amount || !payload.date) {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <h2 className="text-lg font-bold">
-              {isEditing
-                ? "Editar Transação"
-                : type === "income"
-                ? "Registrar Ganho"
-                : type === "transfer"
-                ? "Registrar Transferência"
-                : type === "despesa_cartao"
-                ? "Registrar Despesa com Cartão"
-                : "Registrar Despesa"}
-            </h2>
+  <form onSubmit={handleSubmit} className="space-y-4">
+    <h2 className="text-lg font-bold">
+      {isEditing
+        ? "Editar Transação"
+        : type === "income"
+        ? "Registrar Ganho"
+        : type === "transfer"
+        ? "Registrar Transferência"
+        : type === "despesa_cartao"
+        ? "Registrar Despesa com Cartão"
+        : "Registrar Despesa"}
+    </h2>
 
-            <div>
-              <label className="block text-sm font-medium">Título</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
+    <div>
+      <label className="block text-sm font-medium">Título</label>
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        required
+        className="w-full border px-3 py-2 rounded"
+      />
+    </div>
 
-<div>
-  <label className="block text-sm font-medium">Valor (R$)</label>
-  <input
-    type="text"
-    inputMode="numeric"
-    className="w-full border px-3 py-2 rounded"
-    value={amount}
-    onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
-    required
-    placeholder="Ex: 500,00"
-  />
+    <div>
+      <label className="block text-sm font-medium">Valor (R$)</label>
+      <input
+        type="text"
+        inputMode="numeric"
+        className="w-full border px-3 py-2 rounded"
+        value={amount}
+        onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
+        required
+        placeholder="Ex: 500,00"
+      />
 
+      {isInstallment && totalInstallments > 1 && (
+        <div className="text-sm text-gray-700 mt-2 space-y-1">
+          <p>
+            <span className="font-semibold">Valor por parcela:</span>{" "}
+            R$ {(
+              parseAmountToFloat(amount) / totalInstallments
+            ).toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </p>
 
-
-{isInstallment && totalInstallments > 1 && (
-  <div className="text-sm text-gray-700 mt-2 space-y-1">
-    <p>
-      <span className="font-semibold">Valor por parcela:</span>{" "}
-      R$ {(originalTotalAmount && isEditing
-        ? (originalTotalAmount / totalInstallments)
-        : parseAmountToFloat(amount)
-      ).toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-      })}
-    </p>
-
-    {isEditing && originalTotalAmount && (
-      <p>
-        <span className="font-semibold">Valor total da compra original:</span>{" "}
-        R$ {originalTotalAmount.toLocaleString("pt-BR", {
-          minimumFractionDigits: 2,
-        })}
-      </p>
-    )}
-  </div>
-)}
-
-
-
-
-
-</div>
-
-
+          {isEditing && originalTotalAmount && (
+            <p>
+              <span className="font-semibold">Valor total da compra original:</span>{" "}
+              R$ {originalTotalAmount.toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+              })}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
 
             <div>
               <label className="block text-sm font-medium">Data</label>
@@ -434,13 +425,13 @@ if (!payload.title || !payload.type || !payload.amount || !payload.date) {
                   <span>Parcelado?</span>
                 </div>
                 <div className="flex items-center gap-2">
-  <input
-    type="checkbox"
-    checked={isFixedExpense}
-    onChange={(e) => setIsFixedExpense(e.target.checked)}
-  />
-  <span>Despesa fixa (repetir por 12 meses)</span>
-</div>
+                  <input
+                    type="checkbox"
+                    checked={isFixedExpense}
+                    onChange={(e) => setIsFixedExpense(e.target.checked)}
+                  />
+                  <span>Despesa fixa (repetir por 12 meses)</span>
+                </div>
 
 
                 {isInstallment && (
@@ -454,7 +445,7 @@ if (!payload.title || !payload.type || !payload.amount || !payload.date) {
                       min={1}
                     />
                   </div>
-                  
+
                 )}
               </>
             ) : (
@@ -545,55 +536,55 @@ if (!payload.title || !payload.type || !payload.amount || !payload.date) {
             </div>
           </form>
         )}
-{showConfirmUpdate && (
-  <ConfirmUpdateModal
-    isOpen={showConfirmUpdate}
-    onClose={() => {
-      setShowConfirmUpdate(false);
-      setPendingPayload(null);
-    }}
-    onConfirm={async () => {
-      if (pendingPayload) {
-        await saveTransaction({ ...pendingPayload, updateAllInstallments: true });
-      }
-      setShowConfirmUpdate(false);
-      setPendingPayload(null);
-    }}
-    onCancel={async () => {
-      if (pendingPayload) {
-        await saveTransaction({ ...pendingPayload, updateAllInstallments: false });
-      }
-      setShowConfirmUpdate(false);
-      setPendingPayload(null);
-    }}
-    message="Deseja aplicar esta alteração a todas as parcelas futuras?"
-  />
-)}
+        {showConfirmUpdate && (
+          <ConfirmUpdateModal
+            isOpen={showConfirmUpdate}
+            onClose={() => {
+              setShowConfirmUpdate(false);
+              setPendingPayload(null);
+            }}
+            onConfirm={async () => {
+              if (pendingPayload) {
+                await saveTransaction({ ...pendingPayload, updateAllInstallments: true });
+              }
+              setShowConfirmUpdate(false);
+              setPendingPayload(null);
+            }}
+            onCancel={async () => {
+              if (pendingPayload) {
+                await saveTransaction({ ...pendingPayload, updateAllInstallments: false });
+              }
+              setShowConfirmUpdate(false);
+              setPendingPayload(null);
+            }}
+            message="Deseja aplicar esta alteração a todas as parcelas futuras?"
+          />
+        )}
 
-{showConfirmFixedExpense && (
-  <ConfirmUpdateModal
-    isOpen={showConfirmFixedExpense}
-    onClose={() => {
-      setShowConfirmFixedExpense(false);
-      setPendingPayload(null);
-    }}
-    onConfirm={async () => {
-      if (pendingPayload) {
-        await saveTransaction({ ...pendingPayload, updateFixedExpense: true });
-      }
-      setShowConfirmFixedExpense(false);
-      setPendingPayload(null);
-    }}
-    onCancel={async () => {
-      if (pendingPayload) {
-        await saveTransaction({ ...pendingPayload, updateFixedExpense: false });
-      }
-      setShowConfirmFixedExpense(false);
-      setPendingPayload(null);
-    }}
-    message="Deseja aplicar esta alteração às despesas fixas futuras?"
-  />
-)}
+        {showConfirmFixedExpense && (
+          <ConfirmUpdateModal
+            isOpen={showConfirmFixedExpense}
+            onClose={() => {
+              setShowConfirmFixedExpense(false);
+              setPendingPayload(null);
+            }}
+            onConfirm={async () => {
+              if (pendingPayload) {
+                await saveTransaction({ ...pendingPayload, updateFixedExpense: true });
+              }
+              setShowConfirmFixedExpense(false);
+              setPendingPayload(null);
+            }}
+            onCancel={async () => {
+              if (pendingPayload) {
+                await saveTransaction({ ...pendingPayload, updateFixedExpense: false });
+              }
+              setShowConfirmFixedExpense(false);
+              setPendingPayload(null);
+            }}
+            message="Deseja aplicar esta alteração às despesas fixas futuras?"
+          />
+        )}
 
 
 
