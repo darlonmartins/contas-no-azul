@@ -6,6 +6,9 @@ const { getCardBillingPeriod } = require("../utils/getCardBillingPeriod");
 const { getExactMonthRange } = require("../utils/getExactMonthRange");
 const parseInstallments = require("../utils/parseInstallments");
 const { v4: uuidv4 } = require('uuid');
+const getInvoiceMonth = require("../utils/getInvoiceMonth");
+const invoiceController = require("./invoiceController"); // se ainda não estiver importado
+
 
 
 // Atualiza saldo de uma conta
@@ -48,7 +51,7 @@ const updateTransferBalance = async (fromId, toId, value, isRevert = false) => {
 };
 
 // Criar nova transação
-// Criar nova transação
+
 
 const createTransaction = async (req, res) => {
   try {
@@ -69,17 +72,15 @@ const createTransaction = async (req, res) => {
 
     const userId = req.user.id;
 
-const typeMap = {
-  ganho: "income",
-  despesa: "expense",
-  transferencia: "transfer",
-  despesa_cartao: "despesa_cartao",
-  objetivo: "goal"
-};
-
+    const typeMap = {
+      ganho: "income",
+      despesa: "expense",
+      transferencia: "transfer",
+      despesa_cartao: "despesa_cartao",
+      objetivo: "goal"
+    };
 
     const translatedType = typeMap[type] || type;
-
     const validTypes = ["income", "expense", "transfer", "despesa_cartao", "goal"];
     if (!validTypes.includes(translatedType)) {
       return res.status(400).json({ error: "Tipo de transação inválido." });
@@ -116,6 +117,13 @@ const typeMap = {
         const valorTotal = parseFloat(amount);
         card.availableLimit = Math.max(0, parseFloat(card.availableLimit) - valorTotal);
         await card.save();
+
+        // ✅ Garante criação da fatura com base na data da 1ª parcela
+        const faturaMonth = getInvoiceMonth(date, card.fechamento);
+        await invoiceController.createIfNotExists({
+          body: { cardId, month: faturaMonth },
+          user: req.user
+        });
       }
 
       const result = await Transaction.bulkCreate(parcelas);
@@ -152,81 +160,77 @@ const typeMap = {
       return res.status(201).json(result);
     }
 
-    // ➡️ Depósito em meta
-// ➡️ Depósito em objetivo (goal)
-if (translatedType === "goal") {
-  if (!goalId) {
-    return res.status(400).json({ error: "goalId é obrigatório para transações do tipo objetivo." });
-  }
+    // ➡️ Depósito em objetivo
+    if (translatedType === "goal") {
+      if (!goalId) {
+        return res.status(400).json({ error: "goalId é obrigatório para transações do tipo objetivo." });
+      }
 
-  const goal = await Objective.findByPk(goalId);
-  if (!goal) return res.status(404).json({ error: "Objetivo não encontrado." });
+      const goal = await Objective.findByPk(goalId);
+      if (!goal) return res.status(404).json({ error: "Objetivo não encontrado." });
 
-  const payload = {
-    title: title || `Depósito para objetivo: ${goal.name}`,
-    amount,
-    type: translatedType,
-    date,
-    userId,
-    fromAccountId,
-    goalId,
-  };
+      const payload = {
+        title: title || `Depósito para objetivo: ${goal.name}`,
+        amount,
+        type: translatedType,
+        date,
+        userId,
+        fromAccountId,
+        goalId,
+      };
 
-  console.log("🪪 Dados da transação goal sendo criada:", payload);
+      const transaction = await Transaction.create(payload);
+      await updateAccountBalance(fromAccountId, amount, "goal");
+      goal.currentAmount += parseFloat(amount);
+      await goal.save();
 
-  const transaction = await Transaction.create(payload);
-
-  await updateAccountBalance(fromAccountId, amount, "goal");
-  goal.currentAmount += parseFloat(amount);
-  await goal.save();
-
-  return res.status(201).json(transaction);
-}
-
-
+      return res.status(201).json(transaction);
+    }
 
     // ➡️ Cadastro normal
-// ➡️ Cadastro normal
-const transaction = await Transaction.create({
-  title,
-  amount,
-  type: translatedType,
-  date,
-  isInstallment,
-  totalInstallments: isInstallment ? totalInstallments : null,
-  currentInstallment: isInstallment ? 1 : null,
-  userId,
-  categoryId: translatedType === "transfer" ? null : categoryId || null,
-  fromAccountId: ["income", "expense", "transfer", "despesa_cartao"].includes(translatedType)
-    ? fromAccountId
-    : null,
-  toAccountId: translatedType === "transfer" ? toAccountId : null,
-  cardId: translatedType === "despesa_cartao" ? cardId : null,
-});
+    const transaction = await Transaction.create({
+      title,
+      amount,
+      type: translatedType,
+      date,
+      isInstallment,
+      totalInstallments: isInstallment ? totalInstallments : null,
+      currentInstallment: isInstallment ? 1 : null,
+      userId,
+      categoryId: translatedType === "transfer" ? null : categoryId || null,
+      fromAccountId: ["income", "expense", "transfer", "despesa_cartao"].includes(translatedType)
+        ? fromAccountId
+        : null,
+      toAccountId: translatedType === "transfer" ? toAccountId : null,
+      cardId: translatedType === "despesa_cartao" ? cardId : null,
+    });
 
-console.log("📥 Transação registrada:", {
-  id: transaction.id,
-  title: transaction.title,
-  type: transaction.type,
-  amount: transaction.amount,
-  categoryId: transaction.categoryId,
-  fromAccountId: transaction.fromAccountId,
-  date: transaction.date
-});
+    // 🔄 Garante criação da fatura para despesa avulsa
+    if (translatedType === "despesa_cartao") {
+      const card = await Card.findByPk(cardId);
+      if (card) {
+        const faturaMonth = getInvoiceMonth(date, card.fechamento);
+        await invoiceController.createIfNotExists({
+          body: { cardId, month: faturaMonth },
+          user: req.user
+        });
+      }
+    }
 
-if (["income", "expense", "despesa_cartao"].includes(translatedType)) {
-  await updateAccountBalance(fromAccountId, amount, translatedType);
-} else if (translatedType === "transfer") {
-  await updateTransferBalance(fromAccountId, toAccountId, amount);
-}
+    if (["income", "expense", "despesa_cartao"].includes(translatedType)) {
+      await updateAccountBalance(fromAccountId, amount, translatedType);
+    } else if (translatedType === "transfer") {
+      await updateTransferBalance(fromAccountId, toAccountId, amount);
+    }
 
-res.status(201).json(transaction);
+    res.status(201).json(transaction);
 
   } catch (error) {
     console.error("Erro ao criar transação:", error);
     res.status(500).json({ error: "Erro ao criar transação" });
   }
 };
+
 
 
 // Atualizar transação (agora com suporte a alterar todas as parcelas)
