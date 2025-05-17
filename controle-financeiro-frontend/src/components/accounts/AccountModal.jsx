@@ -31,33 +31,25 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
   const [loading, setLoading] = useState(false);
 
   // ✅ Correção aqui: só altera form se não estiver na tela de sucesso
-  useEffect(() => {
-    if (!isOpen) return;
-    if (success) return;
+ useEffect(() => {
+  if (!isOpen || success) return;
 
-    if (editingAccount) {
-      setForm({
-        name: editingAccount.name || "",
-        bank: editingAccount.bank || "",
-        type: editingAccount.type || "corrente",
-        isMain: editingAccount.isMain || false,
-        saldoAtual: editingAccount.saldoAtual?.toLocaleString("pt-BR", {
-          style: "currency",
-          currency: "BRL",
-        }) || "",
-      });
-      setIsEditing(true);
-    } else {
-      setForm({
-        name: "",
-        bank: "",
-        type: "corrente",
-        isMain: false,
-        saldoAtual: "",
-      });
-      setIsEditing(false);
-    }
-  }, [editingAccount, isOpen]);
+  if (editingAccount) {
+    setForm({
+      name: editingAccount.name || "",
+      bank: editingAccount.bank || "",
+      type: editingAccount.type || "corrente",
+      isMain: editingAccount.isMain || false,
+      saldoAtual: editingAccount.saldoAtual?.toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      }) || "",
+    });
+    setIsEditing(true);
+  } else {
+    resetForm();
+  }
+}, [editingAccount, isOpen, success]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
