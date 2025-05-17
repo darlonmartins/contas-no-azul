@@ -54,8 +54,14 @@ const cardController = {
       const card = await Card.findOne({ where: { id, userId } });
       if (!card) return res.status(404).json({ error: 'Cartão não encontrado' });
 
+      // 🧾 Exclui todas as faturas vinculadas ao cartão
+      const { Invoice } = require('../models');
+      await Invoice.destroy({ where: { cardId: id } });
+
+      // 🔄 Agora sim, exclui o cartão
       await card.destroy();
-      res.json({ message: 'Cartão excluído com sucesso' });
+
+      res.json({ message: 'Cartão e faturas associadas excluídos com sucesso' });
     } catch (error) {
       console.error('Erro ao excluir cartão:', error);
       res.status(500).json({ error: 'Erro ao excluir cartão' });
@@ -65,13 +71,13 @@ const cardController = {
   async getCardsWithAvailableLimit(req, res) {
     try {
       const userId = req.user.id;
-  
+
       // Busca todos os cartões do usuário
       const cards = await Card.findAll({
         where: { userId },
         attributes: ['id', 'name', 'brand', 'limit', 'availableLimit', 'dueDate', 'fechamento']
       });
-  
+
       // Retorna diretamente os dados salvos no banco (inclusive availableLimit real)
       const result = cards.map((card) => ({
         id: card.id,
@@ -82,7 +88,7 @@ const cardController = {
         dueDate: card.dueDate,
         fechamento: card.fechamento
       }));
-  
+
       res.json(result);
     } catch (error) {
       console.error("Erro ao buscar cartões com limite disponível:", error);
@@ -105,7 +111,7 @@ const cardController = {
           type: "despesa_cartao"
         }
       });
-      
+
 
       const gastos = {};
       transactions.forEach((t) => {
@@ -139,15 +145,15 @@ const cardController = {
       const card = await Card.findOne({ where: { id, userId } });
       if (!card) return res.status(404).json({ error: "Cartão não encontrado" });
 
-const transactions = await Transaction.findAll({
-  where: {
-    userId,
-    cardId: { [Op.in]: cardIds },
-    type: "despesa_cartao"
-  }
-});
+      const transactions = await Transaction.findAll({
+        where: {
+          userId,
+          cardId: { [Op.in]: cardIds },
+          type: "despesa_cartao"
+        }
+      });
 
-      
+
 
       const totalGasto = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const availableLimit = parseFloat(card.limit) - totalGasto;
