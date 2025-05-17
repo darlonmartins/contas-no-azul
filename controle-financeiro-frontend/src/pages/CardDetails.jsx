@@ -143,12 +143,15 @@ const CardDetails = () => {
 
   const fetchTotalSpentCard = async () => {
     try {
-      const res = await api.get(`/transactions/card/${selectedCard.id}/forecast`);
+      if (!selectedCardId) return; // segurança extra
+
+      const res = await api.get(`/transactions/card/${selectedCardId}/forecast`);
       setTotalFuture(res.data.total);
     } catch (err) {
       console.error("Erro ao buscar total gasto do cartão:", err);
     }
   };
+
 
   const checkOrCreateInvoice = async () => {
     try {
