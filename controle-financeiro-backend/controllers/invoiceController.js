@@ -32,55 +32,82 @@ async function updateAccountAfterPayment(accountId, value) {
   await account.update({ saldoAtual: novoSaldo });
 }
 
+// ✅ Função auxiliar reutilizável no transactionController
+async function createInvoiceIfNeeded(cardId, month, userId) {
+  const existing = await Invoice.findOne({ where: { cardId, month, userId } });
+
+  const card = await Card.findOne({ where: { id: cardId, userId } });
+  if (!card) throw new Error("Cartão não encontrado.");
+
+  const [startDate, endDate] = getCardBillingPeriod(month, card.fechamento);
+
+  const transactions = await Transaction.findAll({
+    where: {
+      userId,
+      cardId,
+      type: 'despesa_cartao',
+      date: { [Op.between]: [startDate, endDate] },
+      [Op.or]: [
+        { isInstallment: false },
+        { isInstallment: true, installmentNumber: 1 }
+      ]
+    },
+  });
+
+  const amount = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
+
+  if (!existing) {
+    await Invoice.create({ cardId, month, userId, amount });
+    console.log(`🧾 Fatura criada automaticamente para ${month}`);
+  } else {
+    existing.amount = amount;
+    await existing.save();
+    console.log(`🔄 Fatura existente atualizada para ${month}`);
+  }
+}
+
 const invoiceController = {
-  async markAsPaid(req, res) {
+  markAsPaid: async (req, res) => {
     try {
       const { id } = req.params;
       const { amount, paymentDate, accountId } = req.body;
       const userId = req.user.id;
-  
+
       const invoice = await Invoice.findOne({ where: { id, userId } });
       if (!invoice) return res.status(404).json({ message: 'Fatura não encontrada.' });
-  
+
       const card = await Card.findOne({ where: { id: invoice.cardId, userId } });
       if (!card) return res.status(404).json({ message: 'Cartão não encontrado.' });
-  
+
       const valorPago = parseFloat(amount);
       if (isNaN(valorPago) || valorPago <= 0) {
         return res.status(400).json({ message: 'Valor inválido.' });
       }
-  
-      // 🟢 Atualiza fatura
+
       invoice.paid = true;
       invoice.paymentDate = paymentDate || new Date();
       invoice.amount = valorPago;
       await invoice.save();
-  
-      // 🟢 Atualiza limite disponível do cartão
-      const novoLimite = Math.min(card.availableLimit + valorPago, card.limit);
-      card.availableLimit = novoLimite;
+
+      card.availableLimit = Math.min(card.availableLimit + valorPago, card.limit);
       await card.save();
-  
-      // 🟢 Atualiza saldo da conta (se fornecida)
+
       if (accountId) {
-        const { Account } = require('../models');
         const account = await Account.findByPk(accountId);
         if (account) {
-          account.saldoAtual = parseFloat(account.saldoAtual) - valorPago;
+          account.saldoAtual -= valorPago;
           await account.save();
         }
       }
-  
+
       return res.json({ message: 'Fatura paga com sucesso.', invoice, card });
     } catch (error) {
       console.error('❌ Erro ao marcar fatura como paga:', error);
       return res.status(500).json({ message: 'Erro interno ao marcar fatura.' });
     }
-  }
-  
-  ,
+  },
 
-  async unpayInvoice(req, res) {
+  unpayInvoice: async (req, res) => {
     try {
       const { id } = req.params;
       const userId = req.user.id;
@@ -110,49 +137,19 @@ const invoiceController = {
     }
   },
 
-  async createIfNotExists(req, res) {
+  createIfNotExists: async (req, res) => {
     try {
       const { cardId, month } = req.body;
       const userId = req.user.id;
-  
-      let invoice = await Invoice.findOne({ where: { cardId, month, userId } });
-  
-      const card = await Card.findOne({ where: { id: cardId, userId } });
-      if (!card) return res.status(404).json({ message: 'Cartão não encontrado.' });
-  
-      const [startDate, endDate] = getCardBillingPeriod(month, card.fechamento);
-  
-      const transactions = await Transaction.findAll({
-        where: {
-          userId,
-          cardId,
-          type: 'despesa_cartao',
-          date: { [Op.between]: [startDate, endDate] },
-          [Op.or]: [
-            { isInstallment: false },
-            { isInstallment: true, installmentNumber: 1 }
-          ]
-        },
-      });
-  
-      const amount = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-  
-      if (!invoice) {
-        invoice = await Invoice.create({ cardId, month, userId, amount });
-      } else {
-        // 🔁 Atualiza o valor da fatura existente
-        invoice.amount = amount;
-        await invoice.save();
-      }
-  
-      return res.json(invoice);
+      await createInvoiceIfNeeded(cardId, month, userId);
+      return res.json({ message: 'Fatura verificada/criada com sucesso.' });
     } catch (error) {
       console.error('❌ Erro ao criar/verificar fatura:', error);
       return res.status(500).json({ error: 'Erro ao criar/verificar fatura.' });
     }
-  } ,
+  },
 
-  async listByCard(req, res) {
+  listByCard: async (req, res) => {
     try {
       const { cardId } = req.params;
       const userId = req.user.id;
@@ -169,29 +166,26 @@ const invoiceController = {
     }
   },
 
-  async getInvoiceInfo(req, res) {
+  getInvoiceInfo: async (req, res) => {
     try {
       const { cardId, month } = req.query;
       const userId = req.user.id;
-  
+
       if (!cardId || !month) {
         return res.status(400).json({ message: 'Parâmetros cardId e month são obrigatórios.' });
       }
-  
+
       const card = await Card.findOne({ where: { id: cardId, userId } });
       if (!card) return res.status(404).json({ message: 'Cartão não encontrado.' });
-  
-      // ✅ Carrega a fatura correspondente
+
       const invoice = await Invoice.findOne({ where: { cardId, month, userId } });
-  
-      // Calcula datas com base no fechamento do cartão
+
       const [year, monthStr] = month.split('-');
       const monthNum = parseInt(monthStr, 10) - 1;
-  
-      const closingDate = new Date(year, monthNum, card.fechamento);
-const dueDate = new Date(year, monthNum, card.dueDate);
 
-  
+      const closingDate = new Date(year, monthNum, card.fechamento);
+      const dueDate = new Date(year, monthNum, card.dueDate);
+
       return res.json({
         cardName: card.name,
         brand: card.brand,
@@ -199,7 +193,7 @@ const dueDate = new Date(year, monthNum, card.dueDate);
         availableLimit: card.availableLimit,
         closingDate,
         dueDate,
-        total: invoice ? invoice.amount : 0,       // ✅ valor da fatura
+        total: invoice ? invoice.amount : 0,
         invoiceId: invoice?.id || null,
         paid: invoice?.paid || false,
       });
@@ -207,8 +201,10 @@ const dueDate = new Date(year, monthNum, card.dueDate);
       console.error('❌ Erro ao obter dados da fatura:', error);
       return res.status(500).json({ message: 'Erro ao obter dados da fatura.' });
     }
-  }
-  ,
+  },
+
+  // ✅ Exporta função auxiliar
+  createInvoiceIfNeeded,
 };
 
 module.exports = invoiceController;

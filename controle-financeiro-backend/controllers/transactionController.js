@@ -120,10 +120,8 @@ const createTransaction = async (req, res) => {
 
         // ✅ Garante criação da fatura com base na data da 1ª parcela
         const faturaMonth = getInvoiceMonth(date, card.fechamento);
-        await invoiceController.createIfNotExists({
-          body: { cardId, month: faturaMonth },
-          user: req.user
-        });
+        await invoiceController.createInvoiceIfNeeded(cardId, faturaMonth, userId);
+
       }
 
       const result = await Transaction.bulkCreate(parcelas);
@@ -210,12 +208,10 @@ const createTransaction = async (req, res) => {
       const card = await Card.findByPk(cardId);
       if (card) {
         const faturaMonth = getInvoiceMonth(date, card.fechamento);
-        await invoiceController.createIfNotExists({
-          body: { cardId, month: faturaMonth },
-          user: req.user
-        });
+        await invoiceController.createInvoiceIfNeeded(cardId, faturaMonth, userId);
       }
     }
+
 
     if (["income", "expense", "despesa_cartao"].includes(translatedType)) {
       await updateAccountBalance(fromAccountId, amount, translatedType);
