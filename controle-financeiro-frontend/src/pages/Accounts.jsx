@@ -41,7 +41,7 @@ const Accounts = () => {
         await api.post("/accounts", accountData);
       }
 
-      await fetchAccounts(false); // ✅ apenas atualiza os dados sem recarregar a página inteira
+      setTimeout(() => fetchAccounts(), 500); // ✅ apenas atualiza os dados sem recarregar a página inteira
     } catch (err) {
       console.error("Erro ao salvar conta:", err);
     }
