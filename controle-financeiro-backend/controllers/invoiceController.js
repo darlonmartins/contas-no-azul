@@ -188,8 +188,9 @@ const invoiceController = {
       const [year, monthStr] = month.split('-');
       const monthNum = parseInt(monthStr, 10) - 1;
   
-      const closingDate = new Date(year, monthNum + 1, card.fechamento);
-      const dueDate = new Date(year, monthNum + 1, card.dueDate);
+      const closingDate = new Date(year, monthNum, card.fechamento);
+const dueDate = new Date(year, monthNum, card.dueDate);
+
   
       return res.json({
         cardName: card.name,
