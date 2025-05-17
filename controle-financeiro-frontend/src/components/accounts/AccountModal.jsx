@@ -29,6 +29,8 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
   const [success, setSuccess] = useState(false);
   const [showBanks, setShowBanks] = useState(false);
   const [isEditing, setIsEditing] = useState(false); // novo controle interno
+  const [loading, setLoading] = useState(false);
+
 
   useEffect(() => {
     if (editingAccount) {
@@ -69,26 +71,36 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
   };
 
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (!form.bank || !form.type) {
-    alert("Todos os campos obrigatórios devem ser preenchidos.");
-    return;
-  }
+    if (!form.bank || !form.type) {
+      alert("Todos os campos obrigatórios devem ser preenchidos.");
+      return;
+    }
 
-  const saldo = parseFloat(
-    form.saldoAtual.replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "")
-  );
+    setLoading(true);
 
-  const payload = {
-    ...form,
-    saldoAtual: saldo,
+    const saldo = parseFloat(
+      form.saldoAtual.replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "")
+    );
+
+    const payload = {
+      ...form,
+      saldoAtual: saldo,
+    };
+
+    try {
+      await onSubmit(payload);
+      setSuccess(true);
+      setIsEditing(false); // reseta modo de edição após sucesso
+    } catch (err) {
+      alert("Erro ao cadastrar conta.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  await onSubmit(payload);
-  setSuccess(true);
-};
 
 
   const resetForm = () => {
@@ -249,10 +261,16 @@ const handleSubmit = async (e) => {
 
                   <button
                     type="submit"
-                    className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded font-medium mt-2"
+                    disabled={loading}
+                    className={`w-full ${loading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'} text-white py-2 rounded font-medium mt-2`}
                   >
-                    {editingAccount ? "Atualizar Conta" : "Adicionar Conta"}
+                    {loading
+                      ? "Salvando..."
+                      : editingAccount
+                        ? "Atualizar Conta"
+                        : "Adicionar Conta"}
                   </button>
+
                 </form>
               </>
             ) : (
