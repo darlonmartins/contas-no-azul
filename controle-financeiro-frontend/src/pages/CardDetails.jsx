@@ -546,14 +546,15 @@ const CardDetails = () => {
       )}
 
       {confirmDeleteId && (
-        <ConfirmDeleteModal
-          isOpen={!!confirmDeleteId}
-          onConfirm={handleDelete}
-          onCancel={() => setConfirmDeleteId(null)}
-          loading={isDeleting}
-          message="Tem certeza que deseja excluir esta transação?"
-        />
-      )}
+  <ConfirmDeleteModal
+    isOpen={!!confirmDeleteId}
+    onConfirm={handleDelete}
+    onCancel={() => setConfirmDeleteId(null)}
+    loading={isDeleting}
+    cardName="esta transação" // ✅ este campo é necessário para exibir corretamente
+  />
+)}
+
 
       {isUnmarkModalOpen && (
         <ConfirmInvoiceModal
