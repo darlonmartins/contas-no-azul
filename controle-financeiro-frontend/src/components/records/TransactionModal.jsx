@@ -44,6 +44,8 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
   const [showConfirmFixedExpense, setShowConfirmFixedExpense] = useState(false);
   const [isUpdatingFixedExpense, setIsUpdatingFixedExpense] = useState(false);
   const [originalTotalAmount, setOriginalTotalAmount] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
 
 
@@ -161,21 +163,24 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return; // evita múltiplos envios
+    setIsSubmitting(true);
+
     const categoryId = selectedSubcategoryId || selectedCategoryId;
 
     const payload = {
       title,
       amount: (() => {
         const editedAmount = parseAmountToFloat(amount);
+
         if (isEditing && isInstallment && transaction?.totalInstallments > 1) {
           return showConfirmUpdate ? editedAmount * totalInstallments : editedAmount;
         }
         return editedAmount;
       })(),
 
-
-
-      type: convertType(type), // ✅ tipo ajustado para 'despesa', 'ganho', etc.
+      type: convertType(type),
       date,
       isInstallment,
       totalInstallments: isInstallment ? totalInstallments : null,
@@ -197,39 +202,41 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
 
     if (!payload.title || !payload.type || !payload.amount || !payload.date) {
       console.warn("⚠️ Payload incompleto! Verifique os campos obrigatórios.");
+      setIsSubmitting(false);
+      return;
     }
 
+    if (isInstallment) {
+      const valorTotal = parseAmountToFloat(amount);
+      const qtdParcelas = parseInt(totalInstallments);
+      const valorParcela = valorTotal / qtdParcelas;
 
+      if (valorTotal < 1) {
+        toast.error("Valor mínimo para parcelamento é R$ 1,00.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (valorParcela < 0.01) {
+        toast.error("O valor de cada parcela não pode ser menor que R$ 0,01.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (qtdParcelas > 999) {
+        toast.error("Número máximo de parcelas permitido é 999.");
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     if (isEditing && isInstallment && transaction?.totalInstallments > 1) {
       setPendingPayload(payload);
       setShowConfirmUpdate(true);
+      setIsSubmitting(false); // reativa após confirmação
     } else {
       await saveTransaction(payload);
-    }
-  };
-
-  const saveTransaction = async (payload) => {
-    try {
-      if (isEditing) {
-        await api.put(`/transactions/${transaction.id}`, payload);
-        toast.success("Transação atualizada com sucesso.");
-        if (onSave) onSave();
-        if (refresh) refresh();
-        onClose();
-      } else {
-        // 👇 aqui para criação normal, já considerando despesa fixa
-        await api.post("/transactions", {
-          ...payload,
-          isFixedExpense: isFixedExpense, // ✅ envia junto se for despesa fixa
-        });
-        setSuccess(true);
-        if (onSave) onSave();
-        if (refresh) refresh();
-      }
-    } catch (err) {
-      console.error("Erro ao salvar transação:", err);
-      toast.error("Erro ao salvar transação.");
+      setIsSubmitting(false);
     }
   };
 
@@ -419,22 +426,49 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
                   </div>
                 )}
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={isInstallment}
-                    onChange={(e) => setIsInstallment(e.target.checked)}
-                  />
-                  <span>Parcelado?</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={isFixedExpense}
-                    onChange={(e) => setIsFixedExpense(e.target.checked)}
-                  />
-                  <span>Despesa fixa (repetir por 12 meses)</span>
-                </div>
+                {type === "despesa_cartao" && (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={isInstallment}
+                        onChange={(e) => setIsInstallment(e.target.checked)}
+                      />
+                      <span>Parcelado?</span>
+                    </div>
+
+                    {isInstallment && (
+                      <div>
+                        <label className="block text-sm font-medium">Total de Parcelas</label>
+                        <input
+                          type="number"
+                          value={totalInstallments}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value.length <= 3 && parseInt(value) <= 999) {
+                              setTotalInstallments(value);
+                            }
+                          }}
+                          className="w-full border px-3 py-2 rounded"
+                          min={1}
+                          max={999}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {["despesa", "despesa_cartao"].includes(type) && (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={isFixedExpense}
+                      onChange={(e) => setIsFixedExpense(e.target.checked)}
+                    />
+                    <span>Despesa fixa (repetir por 12 meses)</span>
+                  </div>
+                )}
+
 
 
                 {isInstallment && (
@@ -532,10 +566,13 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                disabled={isSubmitting}
+                className={`px-4 py-2 rounded text-white ${isSubmitting ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+                  }`}
               >
-                {isEditing ? "Salvar Alterações" : "Registrar"}
+                {isSubmitting ? "Salvando..." : isEditing ? "Salvar Alterações" : "Registrar"}
               </button>
+
             </div>
           </form>
         )}

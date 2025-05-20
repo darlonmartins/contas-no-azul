@@ -14,10 +14,10 @@ const parseInstallments = (expense, totalInstallments) => {
     let amount = Math.round(rawInstallment * 100) / 100;
 
     if (i === totalInstallments - 1) {
-      amount = Number((totalAmount - accumulated).toFixed(2));
+      amount = Number((totalAmount - accumulated).toFixed(2)); // 💡 Corrige última parcela
     }
 
-    accumulated += amount;
+    accumulated = Number((accumulated + amount).toFixed(2)); // 💡 Garante precisão acumulada
 
     const date = dayjs(expense.date).add(i, "month").startOf("day").toDate();
 
