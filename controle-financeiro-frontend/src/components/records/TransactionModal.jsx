@@ -426,36 +426,32 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
                   </div>
                 )}
 
-                {type === "despesa_cartao" && (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={isInstallment}
-                        onChange={(e) => setIsInstallment(e.target.checked)}
-                      />
-                      <span>Parcelado?</span>
-                    </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={isInstallment}
+                    onChange={(e) => setIsInstallment(e.target.checked)}
+                  />
+                  <span>Parcelado?</span>
+                </div>
 
-                    {isInstallment && (
-                      <div>
-                        <label className="block text-sm font-medium">Total de Parcelas</label>
-                        <input
-                          type="number"
-                          value={totalInstallments}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            if (value.length <= 3 && parseInt(value) <= 999) {
-                              setTotalInstallments(value);
-                            }
-                          }}
-                          className="w-full border px-3 py-2 rounded"
-                          min={1}
-                          max={999}
-                        />
-                      </div>
-                    )}
-                  </>
+                {isInstallment && (
+                  <div>
+                    <label className="block text-sm font-medium">Total de Parcelas</label>
+                    <input
+                      type="number"
+                      value={totalInstallments}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.length <= 3 && parseInt(value) <= 999) {
+                          setTotalInstallments(value);
+                        }
+                      }}
+                      className="w-full border px-3 py-2 rounded"
+                      min={1}
+                      max={999}
+                    />
+                  </div>
                 )}
 
                 {["despesa", "despesa_cartao"].includes(type) && (
@@ -468,25 +464,10 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
                     <span>Despesa fixa (repetir por 12 meses)</span>
                   </div>
                 )}
-
-
-
-                {isInstallment && (
-                  <div>
-                    <label className="block text-sm font-medium">Total de Parcelas</label>
-                    <input
-                      type="number"
-                      value={totalInstallments}
-                      onChange={(e) => setTotalInstallments(e.target.value)}
-                      className="w-full border px-3 py-2 rounded"
-                      min={1}
-                    />
-                  </div>
-
-                )}
               </>
             ) : (
               <>
+
                 <div>
                   <label className="block text-sm font-medium">Carteira</label>
                   <select
