@@ -20,6 +20,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       defaultValue: 0.00,
+      validate: {
+        min: 0,
+      },
     },
     userId: {
       type: DataTypes.INTEGER,
@@ -28,7 +31,10 @@ module.exports = (sequelize, DataTypes) => {
   });
 
   Account.associate = (models) => {
-    Account.belongsTo(models.User, { foreignKey: 'userId' });
+    Account.belongsTo(models.User, {
+      foreignKey: 'userId',
+      onDelete: 'CASCADE',
+    });
   };
 
   return Account;
