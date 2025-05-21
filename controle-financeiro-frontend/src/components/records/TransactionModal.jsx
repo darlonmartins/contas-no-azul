@@ -158,6 +158,29 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
       default: return t; // já está correto (ex: 'despesa', 'despesa_cartao')
     }
   };
+  const saveTransaction = async (payload) => {
+  try {
+    if (isEditing) {
+      await api.put(`/transactions/${transaction.id}`, payload);
+      toast.success("Transação atualizada com sucesso.");
+      if (onSave) onSave();
+      if (refresh) refresh();
+      onClose();
+    } else {
+      await api.post("/transactions", {
+        ...payload,
+        isFixedExpense: isFixedExpense,
+      });
+      setSuccess(true);
+      if (onSave) onSave();
+      if (refresh) refresh();
+    }
+  } catch (err) {
+    console.error("Erro ao salvar transação:", err);
+    toast.error("Erro ao salvar transação.");
+  }
+};
+
 
 
 
