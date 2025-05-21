@@ -2,16 +2,25 @@ const { Account } = require('../models');
 
 // Criação segura da conta
 const createAccount = async (data) => {
-  // Proteção contra duplicidade de conta principal "Carteira"
-  if (data.isMain && data.name === 'Carteira') {
+  const { userId, name } = data;
+  const isCarteira = name.trim().toLowerCase() === 'carteira';
+
+  if (isCarteira) {
+    // Verifica se já existe uma conta "Carteira" para o usuário
     const existing = await Account.findOne({
-      where: { userId: data.userId, name: 'Carteira', isMain: true }
+      where: { userId, name: 'Carteira' }
     });
 
     if (existing) {
-      console.log('⚠️ Conta principal "Carteira" já existe para o usuário', data.userId);
-      return existing; // ou lance erro, se quiser travar
+      console.log('⚠️ Usuário já possui conta "Carteira"');
+      return existing;
     }
+
+    // Marca esta como principal e desmarca as demais
+    data.isMain = true;
+    await Account.update({ isMain: false }, { where: { userId } });
+  } else {
+    data.isMain = false;
   }
 
   return await Account.create(data);
@@ -29,6 +38,16 @@ const getAccounts = async (userId) => {
 const updateAccount = async (id, data, userId) => {
   const account = await Account.findOne({ where: { id, userId } });
   if (!account) throw new Error('Conta não encontrada');
+
+  const isCarteira = data.name?.trim().toLowerCase() === 'carteira';
+
+  if (isCarteira) {
+    data.isMain = true;
+    await Account.update({ isMain: false }, { where: { userId } });
+  } else {
+    data.isMain = false;
+  }
+
   return await account.update(data);
 };
 

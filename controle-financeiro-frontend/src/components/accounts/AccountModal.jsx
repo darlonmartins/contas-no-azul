@@ -247,18 +247,7 @@ const AccountModal = ({ isOpen, onClose, onSubmit, editingAccount }) => {
                     />
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      name="isMain"
-                      checked={form.isMain}
-                      onChange={handleChange}
-                      id="isMain"
-                    />
-                    <label htmlFor="isMain" className="text-sm">
-                      Conta Principal
-                    </label>
-                  </div>
+      
 
 
                   <button
