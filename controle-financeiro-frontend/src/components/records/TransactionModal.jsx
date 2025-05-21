@@ -275,288 +275,253 @@ const TransactionModal = ({ transaction, onClose, onSave, initialType, refresh }
               </button>
             </div>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <h2 className="text-lg font-bold">
-              {isEditing
-                ? "Editar Transação"
-                : type === "income"
-                  ? "Registrar Ganho"
-                  : type === "transfer"
-                    ? "Registrar Transferência"
-                    : type === "despesa_cartao"
-                      ? "Registrar Despesa com Cartão"
-                      : "Registrar Despesa"}
-            </h2>
+       ) : (
+  <form onSubmit={handleSubmit} className="space-y-4">
+    <h2 className="text-lg font-bold">
+      {isEditing
+        ? "Editar Transação"
+        : type === "income"
+          ? "Registrar Ganho"
+          : type === "transfer"
+            ? "Registrar Transferência"
+            : type === "despesa_cartao"
+              ? "Registrar Despesa com Cartão"
+              : "Registrar Despesa"}
+    </h2>
 
-            <div>
-              <label className="block text-sm font-medium">Título</label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
+    <div>
+      <label className="block text-sm font-medium">Título</label>
+      <input
+        type="text"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        required
+        className="w-full border px-3 py-2 rounded"
+      />
+    </div>
 
-            <div>
-              <label className="block text-sm font-medium">Valor (R$)</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                className="w-full border px-3 py-2 rounded"
-                value={amount}
-                onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
-                required
-                placeholder="Ex: 500,00"
-              />
+    <div>
+      <label className="block text-sm font-medium">Valor (R$)</label>
+      <input
+        type="text"
+        inputMode="numeric"
+        className="w-full border px-3 py-2 rounded"
+        value={amount}
+        onChange={(e) => setAmount(formatCurrencyInput(e.target.value))}
+        required
+        placeholder="Ex: 500,00"
+      />
+    </div>
 
-              {isInstallment && totalInstallments > 1 && (
-                <div className="text-sm text-gray-700 mt-2 space-y-1">
-                  <p>
-                    <span className="font-semibold">Valor por parcela:</span>{" "}
-                    R$ {(
-                      parseAmountToFloat(amount) / totalInstallments
-                    ).toLocaleString("pt-BR", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </p>
+    <div>
+      <label className="block text-sm font-medium">Data</label>
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        required
+        className="w-full border px-3 py-2 rounded"
+      />
+    </div>
 
-                  {isEditing && originalTotalAmount && (
-                    <p>
-                      <span className="font-semibold">Valor total da compra original:</span>{" "}
-                      R$ {originalTotalAmount.toLocaleString("pt-BR", {
-                        minimumFractionDigits: 2,
-                      })}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+    {type === "transfer" ? (
+      <>
+        <div>
+          <label className="block text-sm font-medium">Conta de Origem</label>
+          <select
+            value={fromAccountId}
+            onChange={(e) => setFromAccountId(e.target.value)}
+            required
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="">Selecione...</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </select>
+        </div>
 
-            <div>
-              <label className="block text-sm font-medium">Data</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className="w-full border px-3 py-2 rounded"
-              />
-            </div>
+        <div>
+          <label className="block text-sm font-medium">Conta de Destino</label>
+          <select
+            value={toAccountId}
+            onChange={(e) => setToAccountId(e.target.value)}
+            required
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="">Selecione...</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </select>
+        </div>
+      </>
+    ) : type === "despesa_cartao" ? (
+      <>
+        <div>
+          <label className="block text-sm font-medium">Cartão</label>
+          <select
+            value={cardId}
+            onChange={(e) => setCardId(e.target.value)}
+            required
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="">Selecione...</option>
+            {cards.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </div>
 
-            {type === "transfer" ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium">Conta de Origem</label>
-                  <select
-                    value={fromAccountId}
-                    onChange={(e) => setFromAccountId(e.target.value)}
-                    required
-                    className="w-full border px-3 py-2 rounded"
-                  >
-                    <option value="">Selecione...</option>
-                    {accounts.map((acc) => (
-                      <option key={acc.id} value={acc.id}>{acc.name}</option>
-                    ))}
-                  </select>
-                </div>
+        <div>
+          <label className="block text-sm font-medium">Categoria</label>
+          <select
+            value={selectedCategoryId}
+            onChange={(e) => setSelectedCategoryId(parseInt(e.target.value))}
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="">Selecione...</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+        </div>
 
-                <div>
-                  <label className="block text-sm font-medium">Conta de Destino</label>
-                  <select
-                    value={toAccountId}
-                    onChange={(e) => setToAccountId(e.target.value)}
-                    required
-                    className="w-full border px-3 py-2 rounded"
-                  >
-                    <option value="">Selecione...</option>
-                    {accounts.map((acc) => (
-                      <option key={acc.id} value={acc.id}>{acc.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            ) : type === "despesa_cartao" ? (
-              <>
-                <div>
-                  <label className="block text-sm font-medium">Cartão</label>
-                  <select
-                    value={cardId}
-                    onChange={(e) => setCardId(e.target.value)}
-                    required
-                    className="w-full border px-3 py-2 rounded"
-                  >
-                    <option value="">Selecione...</option>
-                    {cards.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium">Categoria</label>
-                  <select
-                    value={selectedCategoryId}
-                    onChange={(e) => setSelectedCategoryId(parseInt(e.target.value))}
-                    className="w-full border px-3 py-2 rounded"
-                  >
-                    <option value="">Selecione...</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {subcategories.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium">Subcategoria</label>
-                    <select
-                      value={selectedSubcategoryId}
-                      onChange={(e) => setSelectedSubcategoryId(parseInt(e.target.value))}
-                      className="w-full border px-3 py-2 rounded"
-                    >
-                      <option value="">Selecione...</option>
-                      {subcategories.map((sub) => (
-                        <option key={sub.id} value={sub.id}>{sub.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={isInstallment}
-                    onChange={(e) => setIsInstallment(e.target.checked)}
-                  />
-                  <span>Parcelado?</span>
-                </div>
-
-                {isInstallment && (
-                  <div>
-                    <label className="block text-sm font-medium">Total de Parcelas</label>
-                    <input
-                      type="number"
-                      value={totalInstallments}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value.length <= 3 && parseInt(value) <= 999) {
-                          setTotalInstallments(value);
-                        }
-                      }}
-                      className="w-full border px-3 py-2 rounded"
-                      min={1}
-                      max={999}
-                    />
-                  </div>
-                )}
-
-                {["despesa", "despesa_cartao"].includes(type) && (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={isFixedExpense}
-                      onChange={(e) => setIsFixedExpense(e.target.checked)}
-                    />
-                    <span>Despesa fixa (repetir por 12 meses)</span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-
-                <div>
-                  <label className="block text-sm font-medium">Carteira</label>
-                  <select
-                    value={fromAccountId}
-                    onChange={(e) => setFromAccountId(e.target.value)}
-                    required
-                    className="w-full border px-3 py-2 rounded"
-                  >
-                    <option value="">Selecione...</option>
-                    {accounts.map((acc) => (
-                      <option key={acc.id} value={acc.id}>{acc.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium">Categoria</label>
-                  <select
-                    value={selectedCategoryId}
-                    onChange={(e) => setSelectedCategoryId(parseInt(e.target.value))}
-                    className="w-full border px-3 py-2 rounded"
-                  >
-                    <option value="">Selecione...</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {subcategories.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium">Subcategoria</label>
-                    <select
-                      value={selectedSubcategoryId}
-                      onChange={(e) => setSelectedSubcategoryId(parseInt(e.target.value))}
-                      className="w-full border px-3 py-2 rounded"
-                    >
-                      <option value="">Selecione...</option>
-                      {subcategories.map((sub) => (
-                        <option key={sub.id} value={sub.id}>{sub.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={isInstallment}
-                    onChange={(e) => setIsInstallment(e.target.checked)}
-                  />
-                  <span>Parcelado?</span>
-                </div>
-
-                {isInstallment && (
-                  <div>
-                    <label className="block text-sm font-medium">Total de Parcelas</label>
-                    <input
-                      type="number"
-                      value={totalInstallments}
-                      onChange={(e) => setTotalInstallments(e.target.value)}
-                      className="w-full border px-3 py-2 rounded"
-                      min={1}
-                    />
-                  </div>
-                )}
-              </>
-            )}
-
-            <div className="flex justify-end gap-2 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-800"
-              >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`px-4 py-2 rounded text-white ${isSubmitting ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-              >
-                {isSubmitting ? "Salvando..." : isEditing ? "Salvar Alterações" : "Registrar"}
-              </button>
-
-            </div>
-          </form>
+        {subcategories.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium">Subcategoria</label>
+            <select
+              value={selectedSubcategoryId}
+              onChange={(e) => setSelectedSubcategoryId(parseInt(e.target.value))}
+              className="w-full border px-3 py-2 rounded"
+            >
+              <option value="">Selecione...</option>
+              {subcategories.map((sub) => (
+                <option key={sub.id} value={sub.id}>{sub.name}</option>
+              ))}
+            </select>
+          </div>
         )}
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isInstallment}
+            onChange={(e) => setIsInstallment(e.target.checked)}
+          />
+          <span>Parcelado?</span>
+        </div>
+
+        {isInstallment && (
+          <div>
+            <label className="block text-sm font-medium">Total de Parcelas</label>
+            <input
+              type="number"
+              value={totalInstallments}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.length <= 3 && parseInt(value) <= 999) {
+                  setTotalInstallments(value);
+                }
+              }}
+              className="w-full border px-3 py-2 rounded"
+              min={1}
+              max={999}
+            />
+          </div>
+        )}
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={isFixedExpense}
+            onChange={(e) => setIsFixedExpense(e.target.checked)}
+          />
+          <span>Despesa fixa (repetir por 12 meses)</span>
+        </div>
+      </>
+    ) : (
+      <>
+        <div>
+          <label className="block text-sm font-medium">Carteira</label>
+          <select
+            value={fromAccountId}
+            onChange={(e) => setFromAccountId(e.target.value)}
+            required
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="">Selecione...</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>{acc.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Categoria</label>
+          <select
+            value={selectedCategoryId}
+            onChange={(e) => setSelectedCategoryId(parseInt(e.target.value))}
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="">Selecione...</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {subcategories.length > 0 && (
+          <div>
+            <label className="block text-sm font-medium">Subcategoria</label>
+            <select
+              value={selectedSubcategoryId}
+              onChange={(e) => setSelectedSubcategoryId(parseInt(e.target.value))}
+              className="w-full border px-3 py-2 rounded"
+            >
+              <option value="">Selecione...</option>
+              {subcategories.map((sub) => (
+                <option key={sub.id} value={sub.id}>{sub.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {type === "despesa" && (
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={isFixedExpense}
+              onChange={(e) => setIsFixedExpense(e.target.checked)}
+            />
+            <span>Despesa fixa (repetir por 12 meses)</span>
+          </div>
+        )}
+      </>
+    )}
+
+    <div className="flex justify-end gap-2 pt-4">
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 text-gray-800"
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        disabled={isSubmitting}
+        className={`px-4 py-2 rounded text-white ${
+          isSubmitting ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+        }`}
+      >
+        {isSubmitting ? "Salvando..." : isEditing ? "Salvar Alterações" : "Registrar"}
+      </button>
+    </div>
+  </form>
+        )}
+
+
         {showConfirmUpdate && (
           <ConfirmUpdateModal
             isOpen={showConfirmUpdate}
