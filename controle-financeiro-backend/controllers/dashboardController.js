@@ -10,7 +10,13 @@ const dashboardController = {
       const userId = req.user.id;
       const { month, category } = req.query;
 
-      const whereExpense = { userId, type: 'expense' };
+      const whereExpense = {
+        userId,
+        type: {
+          [Op.in]: ['expense', 'despesa_cartao']
+        }
+      };
+
       const whereGoal = { userId };
 
       if (month) {
