@@ -69,7 +69,9 @@ const Login = () => {
             <div>
               <label className="block font-medium text-gray-800 mb-1">E-mail</label>
               <input
+              
                 type="email"
+                id="input-email"
                 placeholder="seu@email.com"
                 className="w-full border rounded-lg py-2 px-3 focus:border-blue-500 placeholder-gray-400 text-base"
                 value={email}
@@ -82,6 +84,7 @@ const Login = () => {
               <div className="relative">
                 <label className="block font-medium text-gray-800 mb-1">Senha</label>
                 <input
+                id="input-password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Digite sua senha"
                   className="w-full border rounded-lg py-2 px-3 pr-10 focus:border-blue-500 placeholder-gray-400 text-base"
@@ -100,6 +103,7 @@ const Login = () => {
               <div className="flex justify-end mt-2">
                 <button
                   type="button"
+                  id="btn-forgot-password"
                   onClick={() => setShowForgotModal(true)}
                   className="text-blue-500 text-sm hover:underline"
                 >
@@ -123,6 +127,7 @@ const Login = () => {
 
             <button
               type="submit"
+              id="btn-login"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold flex justify-center items-center gap-2"
             >
               <LogIn className="w-5 h-5" />
@@ -138,6 +143,7 @@ const Login = () => {
           <div className="mt-4 flex justify-center">
             <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
               <GoogleLogin
+              data-testid="google-login"
                 onSuccess={async (credentialResponse) => {
                   try {
                     setLoading(true); // ✅ Ativa o estado de carregamento
@@ -193,6 +199,7 @@ const Login = () => {
 
             <input
               type="email"
+              id="input-forgot-email"
               placeholder="Seu e-mail"
               className="w-full border rounded-lg py-2 px-3 focus:border-blue-500 placeholder-gray-400 text-base mb-4"
               value={forgotEmail}
@@ -206,6 +213,7 @@ const Login = () => {
             <div className="flex gap-2">
               <button
                 type="button"
+                 id="btn-send-reset"
                 aria-label="Enviar e-mail de recuperação"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold"
                 onClick={() => {
@@ -226,6 +234,7 @@ const Login = () => {
 
               <button
                 type="button"
+                id="btn-cancel-reset"
                 className="w-full border border-gray-300 hover:bg-gray-100 text-gray-800 py-2 rounded-lg font-semibold"
                 onClick={() => {
                   setShowForgotModal(false);

@@ -76,6 +76,7 @@ const Register = () => {
               <label className="block font-medium text-gray-800 mb-1">Nome Completo</label>
               <input
                 type="text"
+                id="input-name"
                 name="name"
                 placeholder="Digite seu nome completo"
                 className="w-full border rounded-lg py-2 px-3 focus:border-blue-500 placeholder-gray-400 text-base"
@@ -89,6 +90,7 @@ const Register = () => {
               <label className="block font-medium text-gray-800 mb-1">E-mail</label>
               <input
                 type="email"
+                id="input-email"
                 name="email"
                 placeholder="seu@email.com"
                 className="w-full border rounded-lg py-2 px-3 focus:border-blue-500 placeholder-gray-400 text-base"
@@ -102,6 +104,7 @@ const Register = () => {
               <label className="block font-medium text-gray-800 mb-1">Senha</label>
               <input
                 type={showPassword ? "text" : "password"}
+                id="input-password"
                 name="password"
                 placeholder="Crie uma senha segura"
                 className="w-full border rounded-lg py-2 px-3 pr-10 focus:border-blue-500 placeholder-gray-400 text-base"
@@ -121,6 +124,7 @@ const Register = () => {
               <label className="block font-medium text-gray-800 mb-1">Confirmar Senha</label>
               <input
                 type={showConfirmPassword ? "text" : "password"}
+                 id="input-confirm-password"
                 name="confirmPassword"
                 placeholder="Confirme sua senha"
                 className="w-full border rounded-lg py-2 px-3 pr-10 focus:border-blue-500 placeholder-gray-400 text-base"
@@ -139,6 +143,7 @@ const Register = () => {
             <div className="flex items-start text-base">
               <input
                 type="checkbox"
+                id="checkbox-terms"
                 name="termsAccepted"
                 checked={formData.termsAccepted}
                 onChange={handleChange}
@@ -152,6 +157,7 @@ const Register = () => {
             </div>
 
             <button
+             id="btn-register"
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold flex justify-center items-center gap-2"
             >
@@ -168,6 +174,7 @@ const Register = () => {
               <div className="flex justify-center">
                 <GoogleLogin
                   text="signup_with"
+                  data-testid="google-register"
                   onSuccess={async (credentialResponse) => {
                     try {
                       const credential = credentialResponse.credential;
