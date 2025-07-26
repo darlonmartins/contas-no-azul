@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { UserPlus, Eye, EyeOff } from 'lucide-react';
 import PublicHeader from '../components/layout/PublicHeader';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import api from '../services/api';
 
 const Register = () => {
@@ -157,6 +158,38 @@ const Register = () => {
               <UserPlus className="w-5 h-5" />
               Criar Conta
             </button>
+
+            <div className="relative my-4">
+              <hr className="border-t border-gray-300" />
+              <span className="absolute bg-white px-2 text-sm text-gray-500 left-1/2 transform -translate-x-1/2 -top-3">ou</span>
+            </div>
+
+            <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  text="signup_with"
+                  onSuccess={async (credentialResponse) => {
+                    try {
+                      const credential = credentialResponse.credential;
+                      const response = await api.post('/auth/google-login', { credential });
+                      const { token, user } = response.data;
+
+                      localStorage.setItem('token', token);
+                      localStorage.setItem('userName', user.name);
+
+                      navigate('/dashboard');
+                    } catch (err) {
+                      console.error('Erro no login com Google:', err);
+                      alert('Erro ao autenticar com Google');
+                    }
+                  }}
+                  onError={() => {
+                    alert('Erro ao autenticar com Google');
+                  }}
+                />
+              </div>
+            </GoogleOAuthProvider>
+
 
             <p className="text-center text-base text-gray-600 mt-2">
               Já tem uma conta?{' '}
