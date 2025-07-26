@@ -89,7 +89,7 @@ const Dashboard = () => {
 
   return (
     <div className="p-6">
-      <TrialBanner />
+     {/* <TrialBanner /> */}
 
       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2 text-gray-800">
         <LayoutDashboard className="w-6 h-6 text-indigo-600" />
