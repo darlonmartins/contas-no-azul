@@ -101,16 +101,17 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
               className="w-full border rounded px-3 py-2"
               value={amount}
               onChange={(e) => {
-                const raw = e.target.value.replace(/\D/g, "");
-                const formatted = (Number(raw) / 100).toLocaleString("pt-BR", {
+                const onlyDigits = e.target.value.replace(/\D/g, ""); // remove tudo que não for número
+                const numeric = Number(onlyDigits) / 100;
+                const formatted = numeric.toLocaleString("pt-BR", {
                   style: "currency",
                   currency: "BRL",
                 });
-                console.log("⌨️ Digitando valor:", e.target.value, "➡️", formatted);
                 setAmount(formatted);
               }}
             />
           </div>
+
 
           <div className="mb-3">
             <label className="block text-sm text-gray-600 mb-1">Data de Pagamento</label>
