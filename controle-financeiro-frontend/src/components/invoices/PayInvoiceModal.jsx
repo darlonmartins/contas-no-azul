@@ -13,7 +13,8 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
   // 📥 Ao abrir a modal, define o valor formatado
   useEffect(() => {
     if (invoice?.amount) {
-      const formatted = (Number(invoice.amount).toFixed(2)).toLocaleString("pt-BR", {
+      const numeric = Number(invoice.amount);
+      const formatted = numeric.toLocaleString("pt-BR", {
         style: "currency",
         currency: "BRL",
       });
@@ -55,8 +56,11 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
       return;
     }
 
-    const valorNumerico = Number(amount.replace(/[^\d,-]/g, "").replace(",", "."));
-    console.log("💰 Valor numérico convertido:", valorNumerico);
+    const valorNumerico = Number(
+      amount.replace(/\s/g, "").replace("R$", "").replace(/\./g, "").replace(",", ".")
+    );
+    console.log("💰 Valor formatado digitado:", amount);
+    console.log("🔢 Valor numérico convertido:", valorNumerico);
 
     if (isNaN(valorNumerico)) {
       toast.error("Valor inválido.");
@@ -101,17 +105,17 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
               className="w-full border rounded px-3 py-2"
               value={amount}
               onChange={(e) => {
-                const onlyDigits = e.target.value.replace(/\D/g, ""); // remove tudo que não for número
+                const onlyDigits = e.target.value.replace(/\D/g, "");
                 const numeric = Number(onlyDigits) / 100;
                 const formatted = numeric.toLocaleString("pt-BR", {
                   style: "currency",
                   currency: "BRL",
                 });
+                console.log("⌨️ Digitando valor:", e.target.value, "➡️", formatted);
                 setAmount(formatted);
               }}
             />
           </div>
-
 
           <div className="mb-3">
             <label className="block text-sm text-gray-600 mb-1">Data de Pagamento</label>
