@@ -7,69 +7,83 @@ import { format } from "date-fns";
 const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
   const [accounts, setAccounts] = useState([]);
   const [paymentDate, setPaymentDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
-  const [amount, setAmount] = useState(invoice?.total || "");
+  const [amount, setAmount] = useState("");
   const [accountId, setAccountId] = useState("");
 
-  // ✅ Atualiza o valor da fatura quando a invoice muda
+  // 📥 Ao abrir a modal, define o valor formatado
   useEffect(() => {
     if (invoice?.amount) {
-      console.log("📥 Atualizando valor da fatura (amount):", invoice.amount);
-      setAmount(invoice.amount);
+      const formatted = (Number(invoice.amount).toFixed(2)).toLocaleString("pt-BR", {
+        style: "currency",
+        currency: "BRL",
+      });
+      console.log("📥 Valor da fatura recebido:", invoice.amount);
+      console.log("📦 Valor formatado:", formatted);
+      setAmount(formatted);
     }
   }, [invoice]);
 
-  // ✅ Logs para depuração de entrada
- useEffect(() => {
-    if (invoice) {
-      console.log("🧾 Fatura recebida na modal:", invoice);
-      console.log("💰 Valor da fatura (invoice.amount):", invoice.amount);
-    }
-  }, [invoice]);
-
-  // ✅ Carrega as contas toda vez que abrir a modal com nova fatura
+  // 📡 Buscar contas ao abrir
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
         const res = await api.get("/accounts");
-        console.log("💼 Contas retornadas pela API:", res.data);
+        console.log("📡 Contas carregadas:", res.data);
         setAccounts(res.data);
       } catch (err) {
         console.error("❌ Erro ao carregar contas:", err);
       }
     };
-  
+
     if (isOpen && invoice) {
-      console.log("📡 Disparando fetch de contas...");
       fetchAccounts();
     }
   }, [isOpen, invoice]);
-  
 
   const handleSubmit = async () => {
-    if (!accountId || !amount || isNaN(amount)) {
-      toast.error("Preencha todos os campos corretamente.");
+    console.log("🔁 Iniciando envio do pagamento...");
+
+    if (!invoice?.id) {
+      toast.error("Fatura inválida.");
+      console.error("❌ ID da fatura não informado.");
+      return;
+    }
+
+    if (!accountId || !amount) {
+      toast.error("Preencha todos os campos.");
+      console.warn("⚠️ Campos obrigatórios faltando:", { accountId, amount });
+      return;
+    }
+
+    const valorNumerico = Number(amount.replace(/[^\d,-]/g, "").replace(",", "."));
+    console.log("💰 Valor numérico convertido:", valorNumerico);
+
+    if (isNaN(valorNumerico)) {
+      toast.error("Valor inválido.");
+      console.error("❌ Valor inválido após conversão:", amount);
       return;
     }
 
     try {
-      console.log("✅ Enviando pagamento da fatura:", {
-        invoiceId: invoice.id,
-        amount,
+      const payload = {
+        amount: valorNumerico,
         paymentDate,
         accountId,
+      };
+
+      console.log("📤 Enviando PUT para /invoices/:id/pay", {
+        invoiceId: invoice.id,
+        ...payload,
       });
 
-      await api.put(`/invoices/${invoice.id}/pay`, {
-        amount,
-        paymentDate,
-        accountId,
-      });
+      await api.put(`/invoices/${invoice.id}/pay`, payload);
 
       toast.success("Fatura paga com sucesso!");
+      console.log("✅ Pagamento enviado com sucesso.");
       onClose();
       if (onSuccess) onSuccess();
     } catch (err) {
-      console.error("❌ Erro  pagar fatura:", err);
+      console.error("❌ Erro ao pagar fatura:", err);
       toast.error("Erro ao marcar fatura como paga.");
     }
   };
@@ -83,10 +97,18 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
           <div className="mb-3">
             <label className="block text-sm text-gray-600 mb-1">Valor Pago</label>
             <input
-              type="number"
+              type="text"
               className="w-full border rounded px-3 py-2"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\D/g, "");
+                const formatted = (Number(raw) / 100).toLocaleString("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                });
+                console.log("⌨️ Digitando valor:", e.target.value, "➡️", formatted);
+                setAmount(formatted);
+              }}
             />
           </div>
 
