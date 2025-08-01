@@ -32,7 +32,7 @@ async function updateAccountAfterPayment(accountId, value) {
   await account.update({ saldoAtual: novoSaldo });
 }
 
-// ✅ Função auxiliar reutilizável no transactionController
+// ✅ Agora retorna a fatura criada ou atualizada
 async function createInvoiceIfNeeded(cardId, month, userId) {
   const existing = await Invoice.findOne({ where: { cardId, month, userId } });
 
@@ -57,12 +57,14 @@ async function createInvoiceIfNeeded(cardId, month, userId) {
   const amount = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
 
   if (!existing) {
-    await Invoice.create({ cardId, month, userId, amount });
+    const newInvoice = await Invoice.create({ cardId, month, userId, amount });
     console.log(`🧾 Fatura criada automaticamente para ${month}`);
+    return newInvoice;
   } else {
     existing.amount = amount;
     await existing.save();
     console.log(`🔄 Fatura existente atualizada para ${month}`);
+    return existing;
   }
 }
 
@@ -137,12 +139,18 @@ const invoiceController = {
     }
   },
 
+  // ✅ Agora retorna também a fatura
   createIfNotExists: async (req, res) => {
     try {
       const { cardId, month } = req.body;
       const userId = req.user.id;
-      await createInvoiceIfNeeded(cardId, month, userId);
-      return res.json({ message: 'Fatura verificada/criada com sucesso.' });
+
+      const invoice = await createInvoiceIfNeeded(cardId, month, userId);
+
+      return res.json({
+        message: 'Fatura verificada/criada com sucesso.',
+        invoice,
+      });
     } catch (error) {
       console.error('❌ Erro ao criar/verificar fatura:', error);
       return res.status(500).json({ error: 'Erro ao criar/verificar fatura.' });
@@ -203,7 +211,7 @@ const invoiceController = {
     }
   },
 
-  // ✅ Exporta função auxiliar
+  // Exporta função auxiliar
   createInvoiceIfNeeded,
 };
 
