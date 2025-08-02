@@ -165,8 +165,8 @@ const CardDetails = () => {
 
   const checkOrCreateInvoice = async () => {
     try {
-      const res = await api.post('/invoices/create', { cardId: selectedCardId, month });
-      setInvoice(res.data);
+      const res = await api.post('/invoices/create', { cardId, month });
+setInvoice(res.data.invoice);
     } catch (err) {
       console.error('Erro ao criar/verificar fatura:', err);
     }
