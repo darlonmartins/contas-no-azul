@@ -166,7 +166,7 @@ const CardDetails = () => {
   const checkOrCreateInvoice = async () => {
     try {
       const res = await api.post('/invoices/create', { cardId, month });
-setInvoice(res.data.invoice);
+      setInvoice(res.data.invoice);
     } catch (err) {
       console.error('Erro ao criar/verificar fatura:', err);
     }
@@ -196,33 +196,33 @@ setInvoice(res.data.invoice);
     }
   };
 
-const handleDelete = async () => {
-  if (!confirmDeleteId) return;
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return;
 
-  setIsDeleting(true);
+    setIsDeleting(true);
 
-  try {
-    await api.delete(`/transactions/${confirmDeleteId}`);
-    toast.success("Transação excluída com sucesso");
+    try {
+      await api.delete(`/transactions/${confirmDeleteId}`);
+      toast.success("Transação excluída com sucesso");
 
-    // ✅ Fecha a modal imediatamente
-    setConfirmDeleteId(null);
-    setIsDeleting(false);
+      // ✅ Fecha a modal imediatamente
+      setConfirmDeleteId(null);
+      setIsDeleting(false);
 
-    // 🔄 Atualizações em segundo plano
-    fetchTransactions();
-    fetchFutureChart();
-    fetchFutureInstallments();
-    fetchTotalSpentCard();
-    loadSelectedCard();
-    checkOrCreateInvoice();
-    fetchInvoiceInfo();
-  } catch (err) {
-    console.error("Erro ao excluir transação:", err);
-    toast.error("Erro ao excluir transação");
-    setIsDeleting(false); // fallback
-  }
-};
+      // 🔄 Atualizações em segundo plano
+      fetchTransactions();
+      fetchFutureChart();
+      fetchFutureInstallments();
+      fetchTotalSpentCard();
+      loadSelectedCard();
+      checkOrCreateInvoice();
+      fetchInvoiceInfo();
+    } catch (err) {
+      console.error("Erro ao excluir transação:", err);
+      toast.error("Erro ao excluir transação");
+      setIsDeleting(false); // fallback
+    }
+  };
 
 
   const cardLimit = selectedCard.limit || 0;
@@ -387,7 +387,11 @@ const handleDelete = async () => {
             <div className="flex justify-between items-center pb-2 border-b border-gray-100">
               <span className="text-gray-600">Fatura Atual</span>
               <span className="font-semibold">
-                R$ {totalSpentMonth.toFixed(2)}
+                R$ {totalSpentMonth.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+
               </span>
             </div>
             <div className="flex justify-between items-center pb-2 border-b border-gray-100">
