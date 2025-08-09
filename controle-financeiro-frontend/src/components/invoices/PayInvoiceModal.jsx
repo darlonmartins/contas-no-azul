@@ -4,25 +4,71 @@ import { toast } from "react-toastify";
 import api from "../../services/api";
 import { format } from "date-fns";
 
-const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
+// Helper: converte "R$ 1.234,56" -> 1234.56 (Number)
+const parseCurrencyToNumber = (str) => {
+  if (typeof str === "number") return str;
+  if (!str) return NaN;
+  // remove espaços, "R$", pontos de milhar e troca vírgula por ponto
+  return Number(
+    String(str)
+      .replace(/\s/g, "")
+      .replace("R$", "")
+      .replace(/\./g, "")
+      .replace(",", ".")
+  );
+};
+
+// Helper: formata número para pt-BR currency
+const formatBRL = (num) =>
+  Number(num).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) => {
   const [accounts, setAccounts] = useState([]);
   const [paymentDate, setPaymentDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [amount, setAmount] = useState("");
   const [accountId, setAccountId] = useState("");
 
-  // 📥 Ao abrir a modal, define o valor formatado
+  // 🔍 Loga sempre que o modal abrir/fechar
   useEffect(() => {
-    if (invoice?.amount) {
-      const numeric = Number(invoice.amount);
-      const formatted = numeric.toLocaleString("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      });
-      console.log("📥 Valor da fatura recebido:", invoice.amount);
-      console.log("📦 Valor formatado:", formatted);
+    console.log("🪟 PayInvoiceModal -> isOpen:", isOpen);
+  }, [isOpen]);
+
+  // 🔎 Loga o que chega via props
+  useEffect(() => {
+    console.log("📦 Props recebidas no PayInvoiceModal:");
+    console.log("   invoice:", invoice);
+    console.log("   invoiceValue (total atual esperado):", invoiceValue);
+  }, [invoice, invoiceValue]);
+
+  // 📥 Define valor inicial do campo com base em várias fontes
+  useEffect(() => {
+    // candidatos em ordem de preferência
+    const candidatesRaw = [
+      invoiceValue,               // valor explicitamente passado pelo pai (ideal)
+      invoice?.currentTotal,      // alguns controllers usam esse nome
+      invoice?.invoiceTotal,      // alternativa comum
+      invoice?.total,             // total genérico
+      invoice?.amount             // às vezes o model Invoice tem 'amount'
+    ];
+
+    const candidatesParsed = candidatesRaw.map((v, idx) => {
+      const parsed = typeof v === "string" ? parseCurrencyToNumber(v) : Number(v);
+      console.log(`🧪 Candidate[${idx}] -> raw:`, v, "| parsed:", parsed);
+      return parsed;
+    });
+
+    const base = candidatesParsed.find((v) => !isNaN(v) && v > 0) ?? 0;
+
+    console.log("🧮 base identificada para preencher o campo:", base);
+
+    if (base > 0) {
+      const formatted = formatBRL(base);
+      console.log("🔧 Setando amount inicial com:", formatted);
       setAmount(formatted);
+    } else {
+      console.log("⚠️ Nenhum candidato válido encontrado; mantendo amount atual:", amount);
     }
-  }, [invoice]);
+  }, [invoice, invoiceValue]);
 
   // 📡 Buscar contas ao abrir
   useEffect(() => {
@@ -37,12 +83,17 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
     };
 
     if (isOpen && invoice) {
+      console.log("🔔 Modal abriu com invoice.id:", invoice?.id);
       fetchAccounts();
     }
   }, [isOpen, invoice]);
 
   const handleSubmit = async () => {
     console.log("🔁 Iniciando envio do pagamento...");
+    console.log("🧾 invoice.id:", invoice?.id);
+    console.log("💳 accountId:", accountId);
+    console.log("📅 paymentDate:", paymentDate);
+    console.log("💰 amount (string):", amount);
 
     if (!invoice?.id) {
       toast.error("Fatura inválida.");
@@ -56,10 +107,7 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
       return;
     }
 
-    const valorNumerico = Number(
-      amount.replace(/\s/g, "").replace("R$", "").replace(/\./g, "").replace(",", ".")
-    );
-    console.log("💰 Valor formatado digitado:", amount);
+    const valorNumerico = parseCurrencyToNumber(amount);
     console.log("🔢 Valor numérico convertido:", valorNumerico);
 
     if (isNaN(valorNumerico)) {
@@ -75,17 +123,18 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
         accountId,
       };
 
-      console.log("📤 Enviando PUT para /invoices/:id/pay", {
+      console.log("📤 Enviando PUT /invoices/:id/pay", {
         invoiceId: invoice.id,
-        ...payload,
+        payload,
       });
 
       await api.put(`/invoices/${invoice.id}/pay`, payload);
 
       toast.success("Fatura paga com sucesso!");
       console.log("✅ Pagamento enviado com sucesso.");
-      onClose();
-      if (onSuccess) onSuccess();
+
+      onClose?.();
+      onSuccess?.();
     } catch (err) {
       console.error("❌ Erro ao pagar fatura:", err);
       toast.error("Erro ao marcar fatura como paga.");
@@ -107,10 +156,7 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, onSuccess }) => {
               onChange={(e) => {
                 const onlyDigits = e.target.value.replace(/\D/g, "");
                 const numeric = Number(onlyDigits) / 100;
-                const formatted = numeric.toLocaleString("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                });
+                const formatted = formatBRL(numeric);
                 console.log("⌨️ Digitando valor:", e.target.value, "➡️", formatted);
                 setAmount(formatted);
               }}
