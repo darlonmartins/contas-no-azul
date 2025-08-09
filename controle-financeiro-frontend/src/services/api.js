@@ -1,12 +1,15 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL, // ✅ variável de ambiente usada
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
-// ✅ Interceptor para adicionar token automaticamente em cada requisição
 api.interceptors.request.use(
   (config) => {
+    // 🔍 LOGA URL e PARAMS antes de enviar
+    console.log("🛰️ REQUEST:", config.method?.toUpperCase(), config.url, "params:", config.params);
+
+    // 🔑 Token
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -14,6 +17,7 @@ api.interceptors.request.use(
     } else {
       console.warn('⚠️ Nenhum token encontrado no sessionStorage nem localStorage');
     }
+
     return config;
   },
   (error) => Promise.reject(error)

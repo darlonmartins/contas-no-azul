@@ -46,7 +46,7 @@ const CardDetails = () => {
 
   useEffect(() => {
     if (selectedCardId && month) {
-      console.log("🎯 Disparando fetchTotalSpentCard...");
+      console.log("🎯 Disparando fetchTotalSpentCard com", { selectedCardId, month });
       fetchTransactions();
       fetchFutureChart();
       fetchTotalSpentCard();
@@ -167,7 +167,7 @@ const fetchTotalSpentCard = async () => {
   try {
     if (!selectedCardId) return;
 
-    // garante YYYY-MM válido
+    // garante YYYY-MM
     let safeMonth = month;
     if (!/^\d{4}-\d{2}$/.test(safeMonth)) {
       safeMonth = new Date().toISOString().slice(0, 7);
@@ -176,16 +176,18 @@ const fetchTotalSpentCard = async () => {
 
     console.log("📡 Forecast ->", { cardId: selectedCardId, month: safeMonth });
 
+    // 🔑 ENVIA O MÊS COMO QUERY PARAM
     const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
-      params: { month: safeMonth }, // ✅ ESSA LINHA É O PONTO
+      params: { month: safeMonth },
     });
 
     console.log("✅ Forecast OK:", res.data);
-    setTotalFuture(res.data.total || 0);
+    setTotalFuture(res.data?.total ?? 0);
   } catch (err) {
-    console.error("❌ Erro ao buscar total gasto do cartão (forecast):", err);
+    console.error("❌ Erro ao buscar total gasto do cartão (forecast):", err?.response?.data || err);
   }
 };
+
 
 
 
