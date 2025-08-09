@@ -32,7 +32,7 @@ const CardDetails = () => {
   const [editTransaction, setEditTransaction] = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [totalSpentCard, setTotalSpentCard] = useState(0);
+  const [totalSpentCard, setTotalSpentCard] = useState(0); // (se não usar, pode remover depois)
   const [invoice, setInvoice] = useState(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
   const [invoiceInfo, setInvoiceInfo] = useState(null);
@@ -49,7 +49,7 @@ const CardDetails = () => {
       console.log("🚀 Disparando buscas com", { selectedCardId, month });
       fetchTransactions();
       fetchFutureChart();
-      fetchTotalSpentCard();   // ⬅️ chamada com mês forçado
+      fetchFutureInstallments();   // ✅ unificado
       checkOrCreateInvoice();
       fetchInvoiceInfo();
     }
@@ -67,7 +67,7 @@ const CardDetails = () => {
 
   useEffect(() => {
     if (selectedCardId) {
-      fetchFutureInstallments();
+      fetchFutureInstallments(); // mantém essa chamada isolada
     }
   }, [selectedCardId]);
 
@@ -139,33 +139,18 @@ const CardDetails = () => {
     }
   };
 
+  // ✅ ÚNICA FONTE DA VERDADE PARA O FORECAST
   const fetchFutureInstallments = async () => {
     try {
+      console.log("📡 Forecast (único) ->", { cardId: selectedCardId, month });
       const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
         params: { month }
       });
-      setFutureInstallmentsTotal(parseFloat(res.data.total || 0));
+      const total = parseFloat(res.data?.total || 0);
+      setFutureInstallmentsTotal(total); // já usado na UI “Parcelas Futuras”
+      setTotalFuture(total);             // ✅ também atualiza totalFuture (substitui fetchTotalSpentCard)
     } catch (err) {
-      console.error("Erro ao buscar parcelas futuras:", err);
-    }
-  };
-
-  // 🔧 TROCA PRINCIPAL: força o month na URL (querystring manual)
-  const fetchTotalSpentCard = async () => {
-    try {
-      if (!selectedCardId) return;
-
-      const safeMonth = /^\d{4}-\d{2}$/.test(month) ? month : new Date().toISOString().slice(0, 7);
-      const url = `/transactions/card/${selectedCardId}/forecast?month=${encodeURIComponent(safeMonth)}`;
-
-      console.log("🎯 fetchTotalSpentCard (URL forçada) ->", url);
-
-      const res = await api.get(url);
-      console.log("✅ Forecast OK:", res.data);
-
-      setTotalFuture(res.data?.total ?? 0);
-    } catch (err) {
-      console.error("❌ Erro ao buscar total gasto do cartão (forecast):", err?.response?.data || err);
+      console.error("Erro ao buscar parcelas/forecast:", err?.response?.data || err);
     }
   };
 
@@ -194,7 +179,7 @@ const CardDetails = () => {
     try {
       await api.put(`/invoices/${invoice.id}/unpay`);
       await loadSelectedCard();
-      await fetchTotalSpentCard();
+      await fetchFutureInstallments();  // ✅ usava fetchTotalSpentCard
       await checkOrCreateInvoice();
       await fetchInvoiceInfo();
       setIsUnmarkModalOpen(false);
@@ -210,15 +195,13 @@ const CardDetails = () => {
       await api.delete(`/transactions/${confirmDeleteId}`);
       toast.success("Transação excluída com sucesso");
 
-      // Fecha a modal imediatamente
       setConfirmDeleteId(null);
       setIsDeleting(false);
 
-      // Atualizações em segundo plano
+      // 🔄 Atualizações em segundo plano
       fetchTransactions();
       fetchFutureChart();
-      fetchFutureInstallments();
-      fetchTotalSpentCard();
+      fetchFutureInstallments();   // ✅ usava fetchTotalSpentCard
       loadSelectedCard();
       checkOrCreateInvoice();
       fetchInvoiceInfo();
@@ -534,9 +517,7 @@ const CardDetails = () => {
           onSave={async () => {
             await fetchTransactions();
             await fetchFutureChart();
-            await fetchFutureInstallments();
-            await fetchTotalSpentCard();
-
+            await fetchFutureInstallments(); // ✅ unificado
             const cardsAtualizados = await fetchCards();
             const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
             if (atualizado) setSelectedCard(atualizado);
@@ -544,7 +525,7 @@ const CardDetails = () => {
           refresh={() => {
             fetchTransactions();
             fetchFutureChart();
-            fetchFutureInstallments();
+            fetchFutureInstallments(); // ✅ unificado
           }}
         />
       )}
@@ -585,7 +566,7 @@ const CardDetails = () => {
               } else {
                 console.warn("⚠️ Cartão não encontrado após pagamento.");
               }
-              await fetchTotalSpentCard();
+              await fetchFutureInstallments(); // ✅ unificado
               await checkOrCreateInvoice();
               await fetchInvoiceInfo();
               toast.success("Fatura marcada como paga!");
