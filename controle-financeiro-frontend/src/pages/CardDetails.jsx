@@ -46,6 +46,7 @@ const CardDetails = () => {
 
   useEffect(() => {
     if (selectedCardId && month) {
+      console.log("🎯 Disparando fetchTotalSpentCard...");
       fetchTransactions();
       fetchFutureChart();
       fetchTotalSpentCard();
@@ -166,7 +167,7 @@ const fetchTotalSpentCard = async () => {
   try {
     if (!selectedCardId) return;
 
-    // garante formato YYYY-MM
+    // garante YYYY-MM válido
     let safeMonth = month;
     if (!/^\d{4}-\d{2}$/.test(safeMonth)) {
       safeMonth = new Date().toISOString().slice(0, 7);
@@ -176,7 +177,7 @@ const fetchTotalSpentCard = async () => {
     console.log("📡 Forecast ->", { cardId: selectedCardId, month: safeMonth });
 
     const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
-      params: { month: safeMonth }, // ✅ AGORA VAI COM QUERYSTRING
+      params: { month: safeMonth }, // ✅ ESSA LINHA É O PONTO
     });
 
     console.log("✅ Forecast OK:", res.data);
