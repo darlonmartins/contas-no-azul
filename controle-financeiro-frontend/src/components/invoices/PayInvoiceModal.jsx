@@ -4,6 +4,9 @@ import { toast } from "react-toastify";
 import api from "../../services/api";
 import { format } from "date-fns";
 
+console.log("🧾 PayInvoiceModal v2.1 montado");
+
+
 // Helper: converte "R$ 1.234,56" -> 1234.56 (Number)
 const parseCurrencyToNumber = (str) => {
   if (typeof str === "number") return str;

@@ -19,6 +19,8 @@ import ConfirmInvoiceModal from "../components/invoices/ConfirmInvoiceModal";
 import PayInvoiceModal from "../components/invoices/PayInvoiceModal";
 import { toast } from 'react-toastify';
 
+console.log("🧱 CardDetails BUILD vA3");
+
 const CardDetails = () => {
   const { cardId } = useParams();
   const [cards, setCards] = useState([]);
