@@ -54,16 +54,15 @@ const CardDetails = () => {
     }
   }, [selectedCardId, month]);
 
-    // 🔓 Abre modal de pagamento com logs e valor correto
-  const openPayModal = () => {
-    console.log("🧭 Abrindo PayInvoiceModal...");
-    console.log("📌 invoice (do checkOrCreateInvoice):", invoice);
-    console.log("📌 invoiceInfo (fechamento/vencimento):", invoiceInfo);
-    console.log("📌 totalSpentMonth (Fatura Atual exibida):", totalSpentMonth);
-    console.log("📌 futureInstallmentsTotal (Parcelas Futuras exibidas):", futureInstallmentsTotal);
-
-    setIsPayModalOpen(true);
-  };
+  // 🔓 Abre modal de pagamento com logs e valor correto
+const openPayModal = () => {
+  console.log("🧭 Abrindo PayInvoiceModal...");
+  console.log("📌 invoice:", invoice);
+  console.log("📌 invoiceInfo:", invoiceInfo);
+  console.log("📌 totalSpentMonth (Fatura Atual):", totalSpentMonth);
+  console.log("📌 futureInstallmentsTotal:", futureInstallmentsTotal);
+  setIsPayModalOpen(true);
+};
 
   useEffect(() => {
     if (selectedCardId) {
@@ -71,7 +70,7 @@ const CardDetails = () => {
     }
   }, [selectedCardId]);
 
-  
+
 
   useEffect(() => {
     if (!selectedCard?.id && cards.length > 0) {
@@ -167,13 +166,10 @@ const CardDetails = () => {
     try {
       if (!selectedCardId) return;
 
-      console.log("📡 Buscando total futuro do cartão (forecast)...");
-      console.log("   → cardId:", selectedCardId, "month:", month);
-
+      console.log("📡 Forecast ->", { cardId: selectedCardId, month });
       const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
-        params: { month } // ✅ evita 400
+        params: { month }, // ✅ evita 400
       });
-
       console.log("✅ Forecast OK:", res.data);
       setTotalFuture(res.data.total);
     } catch (err) {
@@ -183,14 +179,15 @@ const CardDetails = () => {
 
 
 
-  const checkOrCreateInvoice = async () => {
-    try {
-      const res = await api.post('/invoices/create', { cardId, month });
-      setInvoice(res.data.invoice);
-    } catch (err) {
-      console.error('Erro ao criar/verificar fatura:', err);
-    }
-  };
+const checkOrCreateInvoice = async () => {
+  try {
+    console.log("🧾 checkOrCreateInvoice ->", { cardId: selectedCardId, month });
+    const res = await api.post('/invoices/create', { cardId: selectedCardId, month });
+    setInvoice(res.data.invoice);
+  } catch (err) {
+    console.error('❌ Erro ao criar/verificar fatura:', err);
+  }
+};
 
   const fetchInvoiceInfo = async () => {
     try {
@@ -599,33 +596,19 @@ const CardDetails = () => {
           isOpen={isPayModalOpen}
           onClose={() => setIsPayModalOpen(false)}
           invoice={invoice}
-          invoiceValue={totalSpentMonth} // ✅ valor que a UI mostra como "Fatura Atual"
+          invoiceValue={totalSpentMonth}   // ✅ agora o modal inicia com R$ 242,65
           onSuccess={async () => {
-            try {
-              console.log("🔄 onSuccess do PayInvoiceModal — atualizando dados...");
-              await new Promise((r) => setTimeout(r, 600));
-
-              const cardsAtualizados = await fetchCards();
-              const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
-
-              if (atualizado) {
-                console.log("💳 Cartão atualizado após pagamento:", atualizado);
-                setSelectedCard(atualizado);
-              } else {
-                console.warn("⚠️ Cartão não encontrado após pagamento.");
-              }
-
-              await fetchTotalSpentCard();
-              await checkOrCreateInvoice();
-              await fetchInvoiceInfo();
-
-              console.log("✅ Atualizações pós-pagamento concluídas.");
-              toast.success("Fatura marcada como paga!");
-            } catch (err) {
-              console.error("❌ Erro ao atualizar dados após pagamento da fatura:", err);
-            }
+            await new Promise(r => setTimeout(r, 600));
+            const cardsAtualizados = await fetchCards();
+            const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
+            if (atualizado) setSelectedCard(atualizado);
+            await fetchTotalSpentCard();
+            await checkOrCreateInvoice();
+            await fetchInvoiceInfo();
+            toast.success("Fatura marcada como paga!");
           }}
         />
+
       )}
 
 
