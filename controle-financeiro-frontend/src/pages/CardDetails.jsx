@@ -162,20 +162,29 @@ const openPayModal = () => {
 
 
 
-  const fetchTotalSpentCard = async () => {
-    try {
-      if (!selectedCardId) return;
+const fetchTotalSpentCard = async () => {
+  try {
+    if (!selectedCardId) return;
 
-      console.log("📡 Forecast ->", { cardId: selectedCardId, month });
-      const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
-        params: { month }, // ✅ evita 400
-      });
-      console.log("✅ Forecast OK:", res.data);
-      setTotalFuture(res.data.total);
-    } catch (err) {
-      console.error("❌ Erro ao buscar total gasto do cartão (forecast):", err);
+    // garante formato YYYY-MM
+    let safeMonth = month;
+    if (!/^\d{4}-\d{2}$/.test(safeMonth)) {
+      safeMonth = new Date().toISOString().slice(0, 7);
+      console.warn("⚠️ month inválido, usando mês atual:", safeMonth);
     }
-  };
+
+    console.log("📡 Forecast ->", { cardId: selectedCardId, month: safeMonth });
+
+    const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
+      params: { month: safeMonth }, // ✅ AGORA VAI COM QUERYSTRING
+    });
+
+    console.log("✅ Forecast OK:", res.data);
+    setTotalFuture(res.data.total || 0);
+  } catch (err) {
+    console.error("❌ Erro ao buscar total gasto do cartão (forecast):", err);
+  }
+};
 
 
 
@@ -188,6 +197,7 @@ const checkOrCreateInvoice = async () => {
     console.error('❌ Erro ao criar/verificar fatura:', err);
   }
 };
+
 
   const fetchInvoiceInfo = async () => {
     try {
@@ -591,25 +601,34 @@ const checkOrCreateInvoice = async () => {
         />
       )}
 
-      {isPayModalOpen && (
-        <PayInvoiceModal
-          isOpen={isPayModalOpen}
-          onClose={() => setIsPayModalOpen(false)}
-          invoice={invoice}
-          invoiceValue={totalSpentMonth}   // ✅ agora o modal inicia com R$ 242,65
-          onSuccess={async () => {
-            await new Promise(r => setTimeout(r, 600));
-            const cardsAtualizados = await fetchCards();
-            const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
-            if (atualizado) setSelectedCard(atualizado);
-            await fetchTotalSpentCard();
-            await checkOrCreateInvoice();
-            await fetchInvoiceInfo();
-            toast.success("Fatura marcada como paga!");
-          }}
-        />
+{isPayModalOpen && (
+  <PayInvoiceModal
+    isOpen={isPayModalOpen}
+    onClose={() => setIsPayModalOpen(false)}
+    invoice={invoice}
+    invoiceValue={totalSpentMonth}  // ✅ passa o valor que a UI exibe como “Fatura Atual”
+    onSuccess={async () => {
+      try {
+        await new Promise(r => setTimeout(r, 600));
+        const cardsAtualizados = await fetchCards();
+        const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
+        if (atualizado) {
+          console.log("💳 Cartão atualizado após pagamento:", atualizado);
+          setSelectedCard(atualizado);
+        } else {
+          console.warn("⚠️ Cartão não encontrado após pagamento.");
+        }
+        await fetchTotalSpentCard();
+        await checkOrCreateInvoice();
+        await fetchInvoiceInfo();
+        toast.success("Fatura marcada como paga!");
+      } catch (err) {
+        console.error("❌ Erro ao atualizar dados após pagamento da fatura:", err);
+      }
+    }}
+  />
+)}
 
-      )}
 
 
 
