@@ -54,11 +54,24 @@ const CardDetails = () => {
     }
   }, [selectedCardId, month]);
 
+    // 🔓 Abre modal de pagamento com logs e valor correto
+  const openPayModal = () => {
+    console.log("🧭 Abrindo PayInvoiceModal...");
+    console.log("📌 invoice (do checkOrCreateInvoice):", invoice);
+    console.log("📌 invoiceInfo (fechamento/vencimento):", invoiceInfo);
+    console.log("📌 totalSpentMonth (Fatura Atual exibida):", totalSpentMonth);
+    console.log("📌 futureInstallmentsTotal (Parcelas Futuras exibidas):", futureInstallmentsTotal);
+
+    setIsPayModalOpen(true);
+  };
+
   useEffect(() => {
     if (selectedCardId) {
       fetchFutureInstallments(); // ← essa chamada isolada aqui
     }
   }, [selectedCardId]);
+
+  
 
   useEffect(() => {
     if (!selectedCard?.id && cards.length > 0) {
@@ -150,17 +163,24 @@ const CardDetails = () => {
 
 
 
-
   const fetchTotalSpentCard = async () => {
     try {
-      if (!selectedCardId) return; // segurança extra
+      if (!selectedCardId) return;
 
-      const res = await api.get(`/transactions/card/${selectedCardId}/forecast`);
+      console.log("📡 Buscando total futuro do cartão (forecast)...");
+      console.log("   → cardId:", selectedCardId, "month:", month);
+
+      const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
+        params: { month } // ✅ evita 400
+      });
+
+      console.log("✅ Forecast OK:", res.data);
       setTotalFuture(res.data.total);
     } catch (err) {
-      console.error("Erro ao buscar total gasto do cartão:", err);
+      console.error("❌ Erro ao buscar total gasto do cartão (forecast):", err);
     }
   };
+
 
 
   const checkOrCreateInvoice = async () => {
@@ -362,12 +382,13 @@ const CardDetails = () => {
                 </div>
               ) : (
                 <button
-                  onClick={() => setIsPayModalOpen(true)}
+                  onClick={openPayModal} // ⬅️ antes: setIsPayModalOpen(true)
                   className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded shadow-md transition"
                 >
                   <CheckCircle className="w-4 h-4" />
                   Marcar Fatura como Paga
                 </button>
+
 
               )}
             </div>
@@ -578,16 +599,17 @@ const CardDetails = () => {
           isOpen={isPayModalOpen}
           onClose={() => setIsPayModalOpen(false)}
           invoice={invoice}
+          invoiceValue={totalSpentMonth} // ✅ valor que a UI mostra como "Fatura Atual"
           onSuccess={async () => {
             try {
-              // Aguarda um pequeno tempo para garantir que o banco terminou a atualização
-              await new Promise((resolve) => setTimeout(resolve, 600));
+              console.log("🔄 onSuccess do PayInvoiceModal — atualizando dados...");
+              await new Promise((r) => setTimeout(r, 600));
 
               const cardsAtualizados = await fetchCards();
               const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
 
               if (atualizado) {
-                console.log("💳 Cartão atualizado após pagamento:", atualizado); // ✅ log aqui
+                console.log("💳 Cartão atualizado após pagamento:", atualizado);
                 setSelectedCard(atualizado);
               } else {
                 console.warn("⚠️ Cartão não encontrado após pagamento.");
@@ -597,15 +619,15 @@ const CardDetails = () => {
               await checkOrCreateInvoice();
               await fetchInvoiceInfo();
 
+              console.log("✅ Atualizações pós-pagamento concluídas.");
               toast.success("Fatura marcada como paga!");
             } catch (err) {
               console.error("❌ Erro ao atualizar dados após pagamento da fatura:", err);
             }
           }}
-
         />
-
       )}
+
 
 
     </div>
