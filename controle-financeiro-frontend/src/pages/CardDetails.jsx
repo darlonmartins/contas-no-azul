@@ -44,16 +44,17 @@ const CardDetails = () => {
 
   useEffect(() => { fetchCards(); }, []);
 
-  useEffect(() => {
-    if (selectedCardId && month) {
-      console.log("🎯 Disparando fetchTotalSpentCard com", { selectedCardId, month });
-      fetchTransactions();
-      fetchFutureChart();
-      fetchTotalSpentCard();
-      checkOrCreateInvoice();
-      fetchInvoiceInfo();
-    }
-  }, [selectedCardId, month]);
+useEffect(() => {
+  if (selectedCardId && month) {
+    console.log("🚀 Disparando buscas com", { selectedCardId, month });
+    fetchTransactions();
+    fetchFutureChart();
+    fetchTotalSpentCard();   // ⬅️ aqui
+    checkOrCreateInvoice();
+    fetchInvoiceInfo();
+  }
+}, [selectedCardId, month]);
+
 
   // 🔓 Abre modal de pagamento com logs e valor corretos
 const openPayModal = () => {
@@ -168,25 +169,52 @@ const fetchTotalSpentCard = async () => {
     if (!selectedCardId) return;
 
     // garante YYYY-MM
-    let safeMonth = month;
-    if (!/^\d{4}-\d{2}$/.test(safeMonth)) {
-      safeMonth = new Date().toISOString().slice(0, 7);
-      console.warn("⚠️ month inválido, usando mês atual:", safeMonth);
-    }
+    const safeMonth = /^\d{4}-\d{2}$/.test(month)
+      ? month
+      : new Date().toISOString().slice(0, 7);
 
-    console.log("📡 Forecast ->", { cardId: selectedCardId, month: safeMonth });
+    // LOG antes de chamar
+    console.log("🎯 fetchTotalSpentCard ->", {
+      selectedCardId,
+      month,
+      safeMonth,
+    });
 
-    // 🔑 ENVIA O MÊS COMO QUERY PARAM
+    // CHAMADA com params
     const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
       params: { month: safeMonth },
     });
 
+    // LOG do que o axios realmente usou (seu interceptor também logará)
     console.log("✅ Forecast OK:", res.data);
     setTotalFuture(res.data?.total ?? 0);
   } catch (err) {
-    console.error("❌ Erro ao buscar total gasto do cartão (forecast):", err?.response?.data || err);
+    // Mostra payload de erro do backend se existir
+    console.error(
+      "❌ Erro ao buscar total gasto do cartão (forecast):",
+      err?.response?.data || err
+    );
+
+    // Fallback: tenta com querystring manual, pra isolar problema de params
+    try {
+      const safeMonth = /^\d{4}-\d{2}$/.test(month)
+        ? month
+        : new Date().toISOString().slice(0, 7);
+
+      const fallbackUrl = `/transactions/card/${selectedCardId}/forecast?month=${encodeURIComponent(
+        safeMonth
+      )}`;
+      console.warn("↩️ Tentando fallback:", fallbackUrl);
+
+      const res2 = await api.get(fallbackUrl);
+      console.log("✅ Forecast (fallback) OK:", res2.data);
+      setTotalFuture(res2.data?.total ?? 0);
+    } catch (err2) {
+      console.error("❌ Fallback também falhou:", err2?.response?.data || err2);
+    }
   }
 };
+
 
 
 
