@@ -4,11 +4,13 @@ import { toast } from "react-toastify";
 import api from "../../services/api";
 import { format } from "date-fns";
 
+console.log("🧾 PayInvoiceModal v2.1 montado");
+
+
 // Helper: converte "R$ 1.234,56" -> 1234.56 (Number)
 const parseCurrencyToNumber = (str) => {
   if (typeof str === "number") return str;
   if (!str) return NaN;
-  // remove espaços, "R$", pontos de milhar e troca vírgula por ponto
   return Number(
     String(str)
       .replace(/\s/g, "")
@@ -23,6 +25,8 @@ const formatBRL = (num) =>
   Number(num).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) => {
+  console.log("🧾 PayInvoiceModal v2.1 montado"); // ← assinatura p/ garantir que é este arquivo
+
   const [accounts, setAccounts] = useState([]);
   const [paymentDate, setPaymentDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [amount, setAmount] = useState("");
@@ -42,7 +46,6 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
 
   // 📥 Define valor inicial do campo com base em várias fontes
   useEffect(() => {
-    // candidatos em ordem de preferência
     const candidatesRaw = [
       invoiceValue,               // valor explicitamente passado pelo pai (ideal)
       invoice?.currentTotal,      // alguns controllers usam esse nome
