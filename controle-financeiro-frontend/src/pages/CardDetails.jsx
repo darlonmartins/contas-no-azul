@@ -55,7 +55,7 @@ const CardDetails = () => {
     }
   }, [selectedCardId, month]);
 
-  // 🔓 Abre modal de pagamento com logs e valor correto
+  // 🔓 Abre modal de pagamento com logs e valor corretos
 const openPayModal = () => {
   console.log("🧭 Abrindo PayInvoiceModal...");
   console.log("📌 invoice:", invoice);
