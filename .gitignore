@@ -1,1 +1,81 @@
-node_modules
+# ====================================
+# 🚀 Projeto Controle Financeiro
+# .gitignore central (raiz)
+# ====================================
+
+# =============================
+# 🌐 Frontend (React + Vite)
+# =============================
+controle-financeiro-frontend/node_modules/
+controle-financeiro-frontend/dist/
+controle-financeiro-frontend/build/
+controle-financeiro-frontend/.cache/
+controle-financeiro-frontend/.vite/
+
+# Variáveis de ambiente (NUNCA versionar)
+controle-financeiro-frontend/.env
+controle-financeiro-frontend/.env.local
+controle-financeiro-frontend/.env.development.local
+controle-financeiro-frontend/.env.test.local
+controle-financeiro-frontend/.env.production.local
+
+# =============================
+# ⚙️ Backend (Node + Sequelize)
+# =============================
+controle-financeiro-backend/node_modules/
+controle-financeiro-backend/dist/
+controle-financeiro-backend/build/
+
+# Variáveis de ambiente (NUNCA versionar)
+controle-financeiro-backend/.env
+controle-financeiro-backend/.env.local
+controle-financeiro-backend/.env.development.local
+controle-financeiro-backend/.env.test.local
+controle-financeiro-backend/.env.production.local
+
+# =============================
+# 🐳 Docker / Banco de dados
+# =============================
+mysql_data/
+*.sql
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# =============================
+# 📝 Logs / temporários
+# =============================
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# =============================
+# 🛠️ Builds / Testes
+# =============================
+dist/
+build/
+coverage/
+.nyc_output/
+
+# =============================
+# 💻 Sistemas operacionais
+# =============================
+.DS_Store
+Thumbs.db
+
+# =============================
+# 📦 Arquivos pessoais
+# =============================
+*.zip
+*.tar.gz
+*.tgz
+
+# =============================
+# 🧑‍💻 IDEs / Editores
+# =============================
+.vscode/
+.idea/
+*.iml

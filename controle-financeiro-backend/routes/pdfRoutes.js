@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middlewares/authMiddleware');
+const authenticate = require('../middlewares/authenticate');
 const pdfController = require('../controllers/pdfController');
 
-router.get('/goals/export', authMiddleware, pdfController.exportGoalsPDF);
+// todas protegidas
+router.get('/monthly-report', authenticate, pdfController.monthlyReport);
 
 module.exports = router;

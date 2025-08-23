@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Dialog } from "@headlessui/react";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 import { format } from "date-fns";
 
-console.log("🧾 PayInvoiceModal v2.1 montado");
-
+console.log("🧾 PayInvoiceModal v2.2 carregado (arquivo importado)");
 
 // Helper: converte "R$ 1.234,56" -> 1234.56 (Number)
 const parseCurrencyToNumber = (str) => {
@@ -25,12 +24,19 @@ const formatBRL = (num) =>
   Number(num).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) => {
-  console.log("🧾 PayInvoiceModal v2.1 montado"); // ← assinatura p/ garantir que é este arquivo
+  console.log("🧾 PayInvoiceModal v2.2 montado (componente executando)");
 
   const [accounts, setAccounts] = useState([]);
   const [paymentDate, setPaymentDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [amount, setAmount] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Valor esperado/“padrão” da fatura (normalizado como número)
+  const expectedAmount = useMemo(() => {
+    const n = Number(invoiceValue);
+    return Number.isFinite(n) ? n : NaN;
+  }, [invoiceValue]);
 
   // 🔍 Loga sempre que o modal abrir/fechar
   useEffect(() => {
@@ -55,7 +61,8 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
     ];
 
     const candidatesParsed = candidatesRaw.map((v, idx) => {
-      const parsed = typeof v === "string" ? parseCurrencyToNumber(v) : Number(v);
+      const parsed =
+        typeof v === "string" ? parseCurrencyToNumber(v) : Number(v);
       console.log(`🧪 Candidate[${idx}] -> raw:`, v, "| parsed:", parsed);
       return parsed;
     });
@@ -77,11 +84,12 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
+        console.log("🛰️ GET /accounts (carregando carteiras) ...");
         const res = await api.get("/accounts");
         console.log("📡 Contas carregadas:", res.data);
         setAccounts(res.data);
       } catch (err) {
-        console.error("❌ Erro ao carregar contas:", err);
+        console.error("❌ Erro ao carregar contas:", err?.response?.data || err);
       }
     };
 
@@ -92,6 +100,11 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
   }, [isOpen, invoice]);
 
   const handleSubmit = async () => {
+    if (isSubmitting) {
+      console.warn("⏳ Submit ignorado (já em andamento)...");
+      return;
+    }
+
     console.log("🔁 Iniciando envio do pagamento...");
     console.log("🧾 invoice.id:", invoice?.id);
     console.log("💳 accountId:", accountId);
@@ -111,7 +124,7 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
     }
 
     const valorNumerico = parseCurrencyToNumber(amount);
-    console.log("🔢 Valor numérico convertido:", valorNumerico);
+    console.log("🔢 Valor numérico convertido:", valorNumerico, "| esperado (invoiceValue):", expectedAmount);
 
     if (isNaN(valorNumerico)) {
       toast.error("Valor inválido.");
@@ -119,19 +132,28 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
       return;
     }
 
-    try {
-      const payload = {
-        amount: valorNumerico,
-        paymentDate,
-        accountId,
-      };
-
-      console.log("📤 Enviando PUT /invoices/:id/pay", {
-        invoiceId: invoice.id,
-        payload,
+    if (Number.isFinite(expectedAmount) && Math.abs(valorNumerico - expectedAmount) > 0.01) {
+      console.warn("🟠 Aviso: valor digitado difere do esperado!", {
+        esperado: expectedAmount,
+        digitado: valorNumerico,
       });
+    }
 
-      await api.put(`/invoices/${invoice.id}/pay`, payload);
+    const payload = {
+      amount: valorNumerico,
+      paymentDate,
+      accountId,
+    };
+    console.log("📤 Enviando PUT /invoices/:id/pay", { invoiceId: invoice.id, payload });
+
+    try {
+      setIsSubmitting(true);
+
+      const res = await api.put(`/invoices/${invoice.id}/pay`, payload);
+      console.log("✅ Resposta do PUT /invoices/:id/pay:", {
+        status: res?.status,
+        data: res?.data
+      });
 
       toast.success("Fatura paga com sucesso!");
       console.log("✅ Pagamento enviado com sucesso.");
@@ -139,8 +161,13 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
       onClose?.();
       onSuccess?.();
     } catch (err) {
-      console.error("❌ Erro ao pagar fatura:", err);
-      toast.error("Erro ao marcar fatura como paga.");
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      console.error("❌ Erro ao pagar fatura:", { status, data, err });
+      toast.error(data?.message || "Erro ao marcar fatura como paga.");
+    } finally {
+      setIsSubmitting(false);
+      console.log("🏁 handleSubmit finalizado");
     }
   };
 
@@ -172,7 +199,10 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
               type="date"
               className="w-full border rounded px-3 py-2"
               value={paymentDate}
-              onChange={(e) => setPaymentDate(e.target.value)}
+              onChange={(e) => {
+                console.log("🗓️ Alterando paymentDate:", e.target.value);
+                setPaymentDate(e.target.value);
+              }}
             />
           </div>
 
@@ -181,7 +211,10 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
             <select
               className="w-full border rounded px-3 py-2"
               value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
+              onChange={(e) => {
+                console.log("👛 Alterando accountId:", e.target.value);
+                setAccountId(e.target.value);
+              }}
             >
               <option value="">Selecione</option>
               {accounts.map((acc) => (
@@ -196,14 +229,16 @@ const PayInvoiceModal = ({ isOpen, onClose, invoice, invoiceValue, onSuccess }) 
             <button
               onClick={onClose}
               className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+              disabled={isSubmitting}
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
-              className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+              disabled={isSubmitting}
+              className={`px-4 py-2 rounded text-white ${isSubmitting ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"}`}
             >
-              Confirmar Pagamento
+              {isSubmitting ? "Enviando..." : "Confirmar Pagamento"}
             </button>
           </div>
         </Dialog.Panel>

@@ -9,6 +9,8 @@
     "undo": "dotenv -e .env -- sequelize-cli db:migrate:undo:all"
   },
   "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.18",
+    "axios": "^1.11.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",

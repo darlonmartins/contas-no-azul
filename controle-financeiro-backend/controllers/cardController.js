@@ -1,5 +1,6 @@
 const { Card, Transaction } = require('../models');
 const { Op } = require('sequelize');
+const dayjs = require('dayjs');
 
 const cardController = {
   async create(req, res) {
@@ -72,13 +73,11 @@ const cardController = {
     try {
       const userId = req.user.id;
 
-      // Busca todos os cartões do usuário
       const cards = await Card.findAll({
         where: { userId },
         attributes: ['id', 'name', 'brand', 'limit', 'availableLimit', 'dueDate', 'fechamento']
       });
 
-      // Retorna diretamente os dados salvos no banco (inclusive availableLimit real)
       const result = cards.map((card) => ({
         id: card.id,
         name: card.name,
@@ -94,8 +93,7 @@ const cardController = {
       console.error("Erro ao buscar cartões com limite disponível:", error);
       res.status(500).json({ error: "Erro ao buscar cartões" });
     }
-  }
-  ,
+  },
 
   async getSummary(req, res) {
     try {
@@ -112,7 +110,6 @@ const cardController = {
         }
       });
 
-
       const gastos = {};
       transactions.forEach((t) => {
         gastos[t.cardId] = (gastos[t.cardId] || 0) + parseFloat(t.amount);
@@ -126,7 +123,7 @@ const cardController = {
           limit: parseFloat(card.limit),
           used: gasto,
           dueDate: card.dueDate,
-          color: 'bg-purple-500' // ou baseado na marca, se quiser
+          color: 'bg-purple-500'
         };
       });
 
@@ -137,35 +134,52 @@ const cardController = {
     }
   },
 
-  async getOneCardWithLimit(req, res) { // ✅ NOVO
+  // ✅ Corrigido: não usa mais cardIds inexistente; traz visão por cartão
+  async getOneCardWithLimit(req, res) {
     try {
       const userId = req.user.id;
       const { id } = req.params;
+      const { month } = req.query; // opcional: YYYY-MM
 
-      const card = await Card.findOne({ where: { id, userId } });
+      const card = await Card.findOne({
+        where: { id, userId },
+        attributes: ['id', 'name', 'brand', 'limit', 'availableLimit', 'fechamento', 'dueDate']
+      });
+
       if (!card) return res.status(404).json({ error: "Cartão não encontrado" });
 
-      const transactions = await Transaction.findAll({
+      // 🔢 Visão “real” do disponível
+      const limit = parseFloat(card.limit || 0);
+      const availableLimit = parseFloat(
+        card.availableLimit != null ? card.availableLimit : limit
+      );
+      const usedFromAvailable = Math.max(limit - availableLimit, 0);
+
+      // 📅 Soma do mês (despesa_cartao) para esse cartão
+      const monthKey = month || dayjs().format('YYYY-MM');
+      const start = dayjs(`${monthKey}-01`).startOf('month').format('YYYY-MM-DD');
+      const end = dayjs(`${monthKey}-01`).endOf('month').format('YYYY-MM-DD');
+
+      const spentInMonth = await Transaction.sum('amount', {
         where: {
           userId,
-          cardId: { [Op.in]: cardIds },
-          type: "despesa_cartao"
+          cardId: card.id,
+          type: 'despesa_cartao',
+          date: { [Op.between]: [start, end] }
         }
       });
 
-
-
-      const totalGasto = transactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
-      const availableLimit = parseFloat(card.limit) - totalGasto;
-
-      res.json({
+      return res.json({
         id: card.id,
         name: card.name,
         brand: card.brand,
-        limit: parseFloat(card.limit),
+        limit: Number(limit.toFixed(2)),
         availableLimit: Number(availableLimit.toFixed(2)),
+        usedFromAvailable: Number(usedFromAvailable.toFixed(2)),
+        spentInMonth: Number(parseFloat(spentInMonth || 0).toFixed(2)),
         fechamento: card.fechamento,
-        dueDate: card.dueDate
+        dueDate: card.dueDate,
+        month: monthKey
       });
     } catch (error) {
       console.error("Erro ao buscar cartão com limite:", error);
