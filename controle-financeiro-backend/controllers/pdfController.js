@@ -1,29 +1,23 @@
-const { Goal, Category, User } = require('../models');
-const { generateGoalsPDF } = require('../services/pdfService');
+const pdfService = require('../services/pdfService');
 
-const pdfController = {
-  async exportGoalsPDF(req, res) {
+module.exports = {
+  monthlyReport: async (req, res) => {
     try {
-      const userId = req.user.id;
+      const user = req.user; // <- pega do middleware de auth
+      const { month, categoryId } = req.query; // month = "YYYY-MM" opcional
 
-      const user = await User.findByPk(userId);
-      const goals = await Goal.findAll({
-        where: { userId },
-        include: [{ model: Category, attributes: ['name'] }],
-        order: [['year', 'DESC'], ['month', 'DESC']],
-      });
-
-      const pdfStream = generateGoalsPDF(goals, user.name || 'Usuário');
-
+      const fileName = `relatorio-${(month || 'atual')}.pdf`.replace(/[^a-z0-9\-\.]/gi,'_');
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=metas.pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
 
-      pdfStream.pipe(res);
+      await pdfService.generateMonthlyReport(
+        { userId: user.id, month, categoryId },
+        res,
+        user // <- envia user p/ cabeçalho bonitinho
+      );
     } catch (err) {
-      console.error('Erro ao gerar PDF:', err);
+      console.error('PDF monthlyReport error', err);
       res.status(500).json({ error: 'Erro ao gerar PDF' });
     }
   },
 };
-
-module.exports = pdfController;

@@ -17,4 +17,7 @@ router.put('/:id/unpay', authenticate, invoiceController.unpayInvoice);
 // 🧾 Obter informações da fatura por cartão e mês (dinâmico)
 router.get('/invoice-info', authenticate, invoiceController.getInvoiceInfo);
 
+router.get('/:cardId/forecast', invoiceController.forecast);
+
+
 module.exports = router;
