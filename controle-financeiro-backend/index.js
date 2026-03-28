@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
 const app = express();
 
@@ -18,7 +19,6 @@ const allowedOrigins = process.env.CORS_ORIGINS
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Permite requisições sem origin (ex: mobile, Postman em dev)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -32,8 +32,8 @@ app.use(express.json());
 
 // ── Rate limit nas rotas de autenticação (anti força bruta)
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 20,                   // máx 20 tentativas por IP
+  windowMs: 15 * 60 * 1000,
+  max: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.' },
@@ -54,12 +54,12 @@ app.set('UPLOAD_INVOICES_DIR', UPLOAD_DIR);
 app.use('/uploads/invoices', express.static(UPLOAD_DIR));
 
 // ── Rotas públicas
-const authRoutes        = require('./routes/authRoutes');
-const userRoutes        = require('./routes/userRoutes');
-const trialRoutes       = require('./routes/trialRoutes');
-const googleAuthRoutes  = require('./routes/googleAuthRoutes');
+const authRoutes       = require('./routes/authRoutes');
+const userRoutes       = require('./routes/userRoutes');
+const trialRoutes      = require('./routes/trialRoutes');
+const googleAuthRoutes = require('./routes/googleAuthRoutes');
 
-app.use('/api/auth',        authLimiter, authRoutes);   // rate limit aplicado aqui
+app.use('/api/auth',        authLimiter, authRoutes);
 app.use('/api/users',       userRoutes);
 app.use('/api/trial',       trialRoutes);
 app.use('/api/auth/google', authLimiter, googleAuthRoutes);
@@ -112,11 +112,13 @@ const { sequelize } = require('./models');
 
 const startServer = async () => {
   try {
+    // Roda migrations pendentes antes de subir o servidor
+    console.log('🔄 Rodando migrations...');
+    execSync('npx sequelize-cli db:migrate', { stdio: 'inherit' });
+    console.log('✅ Migrations concluídas');
+
     await sequelize.authenticate();
     console.log('✅ Conectado ao banco de dados');
-
-    await sequelize.sync();
-    console.log('🧠 Tabelas sincronizadas');
 
     const PORT = process.env.PORT || 3001;
     app.listen(PORT, () => {
