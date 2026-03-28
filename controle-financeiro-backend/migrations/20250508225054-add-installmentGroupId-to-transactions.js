@@ -2,13 +2,20 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('Transactions', 'installmentGroupId', {
-      type: Sequelize.STRING,
-      allowNull: true,
-    });
+    const table = await queryInterface.describeTable('Transactions');
+    if (!table.installmentGroupId) {
+      await queryInterface.addColumn('Transactions', 'installmentGroupId', {
+        type: Sequelize.STRING(255),
+        allowNull: true,
+      });
+    }
+
   },
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('Transactions', 'installmentGroupId');
+  async down(queryInterface) {
+    const table = await queryInterface.describeTable('Transactions');
+    if (table.installmentGroupId) {
+      await queryInterface.removeColumn('Transactions', 'installmentGroupId');
+    }
   }
 };

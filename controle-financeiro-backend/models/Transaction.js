@@ -68,6 +68,11 @@ module.exports = (sequelize) => {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
+
+        importHash: {
+      type: DataTypes.STRING(32),
+      allowNull: true,
+    },
   });
 
 

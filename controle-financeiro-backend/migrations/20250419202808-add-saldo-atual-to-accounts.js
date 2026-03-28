@@ -2,14 +2,21 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    return queryInterface.addColumn('Accounts', 'saldoAtual', {
-      type: Sequelize.DECIMAL(10, 2),
-      allowNull: false,
-      defaultValue: 0.00,
-    });
+    const table = await queryInterface.describeTable('Accounts');
+    if (!table.saldoAtual) {
+      await queryInterface.addColumn('Accounts', 'saldoAtual', {
+        type: Sequelize.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0,
+        after: '...' 
+      });
+    }
   },
 
-  down: async (queryInterface, Sequelize) => {
-    return queryInterface.removeColumn('Accounts', 'saldoAtual');
-  }
+  down: async (queryInterface) => {
+    const table = await queryInterface.describeTable('Accounts');
+    if (table.saldoAtual) {
+      await queryInterface.removeColumn('Accounts', 'saldoAtual');
+    }
+  },
 };
