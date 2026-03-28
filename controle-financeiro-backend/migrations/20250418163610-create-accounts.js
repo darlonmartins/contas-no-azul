@@ -3,21 +3,16 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
 
-    const [installmentExists] = await queryInterface.sequelize.query(`
-      SHOW COLUMNS FROM Transactions LIKE 'installmentNumber'
-    `);
-    if (!installmentExists.length) {
+    const tableInfo = await queryInterface.describeTable('Transactions');
+
+    if (!tableInfo.installmentNumber) {
       await queryInterface.addColumn('Transactions', 'installmentNumber', {
         type: Sequelize.INTEGER,
         allowNull: true,
       });
     }
 
-
-    const [isInstallmentExists] = await queryInterface.sequelize.query(`
-      SHOW COLUMNS FROM Transactions LIKE 'isInstallment'
-    `);
-    if (!isInstallmentExists.length) {
+    if (!tableInfo.isInstallment) {
       await queryInterface.addColumn('Transactions', 'isInstallment', {
         type: Sequelize.BOOLEAN,
         allowNull: true,

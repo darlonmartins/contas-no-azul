@@ -1,7 +1,27 @@
-function errorHandler(err, req, res, next) {
+/**
+ * middlewares/errorMiddleware.js
+ *
+ * Handler global de erros do Express.
+ * Deve ser registrado como o ÚLTIMO app.use() em index.js.
+ */
+
+function errorHandler(err, req, res, next) { // eslint-disable-line no-unused-vars
+  // Só imprime stack em desenvolvimento
+  if (process.env.NODE_ENV !== 'production') {
     console.error(err.stack);
-    res.status(500).json({ message: 'Erro interno do servidor' });
+  } else {
+    console.error(`[${new Date().toISOString()}] ${err.message}`);
   }
-  
-  module.exports = errorHandler;
-  
+
+  const status = err.status || err.statusCode || 500;
+
+  // Em produção não expõe detalhes internos
+  const message =
+    process.env.NODE_ENV === 'production' && status === 500
+      ? 'Erro interno do servidor'
+      : err.message || 'Erro interno do servidor';
+
+  res.status(status).json({ message });
+}
+
+module.exports = errorHandler;

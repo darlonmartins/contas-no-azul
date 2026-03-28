@@ -3,11 +3,9 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
 
-    const [exists] = await queryInterface.sequelize.query(`
-      SHOW COLUMNS FROM Categories LIKE 'parentId'
-    `);
+    const tableInfo = await queryInterface.describeTable('Categories');
 
-    if (!exists.length) {
+    if (!tableInfo.parentId) {
       await queryInterface.addColumn("Categories", "parentId", {
         type: Sequelize.INTEGER,
         allowNull: true,

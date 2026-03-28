@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middlewares/authMiddleware');
 const settingsController = require('../controllers/settingsController');
 
-router.get('/', authMiddleware, settingsController.getSettings);
-router.put('/', authMiddleware, settingsController.updateSettings);
+// Autenticação já aplicada globalmente em index.js para /api/settings
+// Não duplicar o middleware aqui.
+
+router.get('/', settingsController.getSettings);
+router.put('/', settingsController.updateSettings);
 
 module.exports = router;

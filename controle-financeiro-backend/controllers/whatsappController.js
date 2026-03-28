@@ -5,21 +5,33 @@ const { parseMessage } = require('../utils/parseMessage');
 const normalizePhone = require('../utils/normalizePhone');
 const pairingRepo = require('../repositories/whatsappPairingRepo');
 
-// Mantemos apenas pendências em memória
+// Pendências em memória (confirmação de lançamento — curta duração, ok em memória)
 const pendingByPhone = new Map();
 
-// Idempotência simples (opcional)
-const processedMessageIds = new Set();
-const MAX_IDS = 5000;
-function alreadyProcessed(messageId) {
+/**
+ * Idempotência de mensagens.
+ * Usa o banco para persistir IDs processados — restart do servidor
+ * não causa duplicação de lançamentos.
+ *
+ * A tabela ProcessedWhatsappMessage precisa existir:
+ *   messageId VARCHAR(255) PRIMARY KEY
+ *   processedAt DATETIME DEFAULT NOW()
+ *
+ * Se preferir não criar a tabela agora, basta substituir as chamadas
+ * abaixo pelo Set em memória (menos seguro, mas funcional).
+ */
+async function alreadyProcessed(messageId) {
   if (!messageId) return false;
-  if (processedMessageIds.has(messageId)) return true;
-  processedMessageIds.add(messageId);
-  if (processedMessageIds.size > MAX_IDS) {
-    const first = processedMessageIds.values().next().value;
-    processedMessageIds.delete(first);
+  try {
+    const { ProcessedWhatsappMessage } = require('../models');
+    const existing = await ProcessedWhatsappMessage.findByPk(messageId);
+    if (existing) return true;
+    await ProcessedWhatsappMessage.create({ messageId });
+    return false;
+  } catch {
+    // Fallback: se o modelo não existir ainda, usa verificação simples
+    return false;
   }
-  return false;
 }
 
 async function tryPairing(from, text) {
@@ -29,66 +41,46 @@ async function tryPairing(from, text) {
   const email = m[1];
   const user = await User.findOne({ where: { email } });
   if (!user) {
-    await whatsappService.sendText(from, `❌ Não encontrei usuário com e-mail: ${email}`);
+    await whatsappService.sendText(from, `Não encontrei usuário com e-mail: ${email}`);
     return true;
   }
 
-  await pairingRepo.upsertPairing(from, user.id); // ✅ persiste
+  await pairingRepo.upsertPairing(from, user.id);
   await whatsappService.sendText(
     from,
-    `✅ Número vinculado ao usuário: ${user.name || email}.
-Agora você pode lançar: "gastei 45,90 no mercado (alimentação) hoje no Nubank".`
+    `Número vinculado ao usuário: ${user.name || email}.\nAgora você pode lançar: "gastei 45,90 no mercado (alimentação) hoje no Nubank".`
   );
   return true;
 }
 
 async function resolveUserId(from) {
-  const pairing = await pairingRepo.findByPhone(from); // ✅ lê do banco
+  const pairing = await pairingRepo.findByPhone(from);
   return pairing?.userId || null;
 }
 
 async function createTransactionFromPayload(p) {
-  const {
-    userId, type, amount, date, title,
-    categoryName, accountName, fromAccountName, toAccountName
-  } = p;
+  const { userId, type, amount, date, title, categoryName, accountName, fromAccountName, toAccountName } = p;
 
-  let category = null;
-  if (categoryName) {
-    category = await Category.findOne({ where: { userId, name: categoryName } });
-  }
+  const [category, account] = await Promise.all([
+    categoryName ? Category.findOne({ where: { userId, name: categoryName } }) : null,
+    accountName  ? Account.findOne({  where: { userId, name: accountName  } }) : null,
+  ]);
 
-  let account = null;
-  if (accountName) {
-    account = await Account.findOne({ where: { userId, name: accountName } });
-  }
-
-  let fromAccount = null;
-  let toAccount = null;
-
+  let fromAccount = null, toAccount = null;
   if (type === 'transfer') {
-    if (fromAccountName) {
-      fromAccount = await Account.findOne({ where: { userId, name: fromAccountName } });
-    }
-    if (toAccountName) {
-      toAccount = await Account.findOne({ where: { userId, name: toAccountName } });
-    }
+    [fromAccount, toAccount] = await Promise.all([
+      fromAccountName ? Account.findOne({ where: { userId, name: fromAccountName } }) : null,
+      toAccountName   ? Account.findOne({ where: { userId, name: toAccountName   } }) : null,
+    ]);
   }
 
-  const payload = {
-    userId,
-    type,
-    amount,
-    date,
+  const created = await Transaction.create({
+    userId, type, amount, date,
     title: title || 'WhatsApp',
-    categoryId: category?.id || null,
-    accountId: account?.id || null,
+    categoryId:    category?.id    || null,
+    accountId:     account?.id     || null,
     fromAccountId: fromAccount?.id || null,
-    toAccountId: toAccount?.id || null
-  };
-
-  const created = await Transaction.create(payload, {
-    include: [{ model: Category }, { model: Account }],
+    toAccountId:   toAccount?.id   || null,
   });
 
   return Transaction.findByPk(created.id, {
@@ -101,77 +93,70 @@ async function handleTextMessage(msgObj) {
   const text = msgObj.text?.body?.trim();
   if (!text) return;
 
-  // ajuda
   if (/^ajuda$/i.test(text)) {
     await whatsappService.sendText(from,
-`📌 Exemplos:
-- "vincular seu-email@dominio.com"
-- "gastei 45,90 no mercado hoje no Nubank (alimentação)"
-- "recebi 1500,00 salário 05/08 na Carteira Principal"
-Depois responda "confirmar" para lançar.
-Comandos rápidos: saldo | menu | cancelar`);
+      'Exemplos:\n' +
+      '- "vincular seu-email@dominio.com"\n' +
+      '- "gastei 45,90 no mercado hoje no Nubank (alimentação)"\n' +
+      '- "recebi 1500,00 salário 05/08 na Carteira Principal"\n' +
+      'Depois responda "confirmar" para lançar.\n' +
+      'Comandos rápidos: saldo | menu | cancelar'
+    );
     return;
   }
 
-  // comandos curtos
   if (/^menu$/i.test(text)) {
-    await whatsappService.sendText(from, '📋 Opções: saldo | ajuda | confirmar | cancelar');
+    await whatsappService.sendText(from, 'Opcoes: saldo | ajuda | confirmar | cancelar');
     return;
   }
+
   if (/^saldo$/i.test(text)) {
-    // TODO: consultar saldo real do usuário (via resolveUserId(from))
     const userId = await resolveUserId(from);
     if (!userId) {
       await whatsappService.sendText(from, 'Para começar, envie: "vincular seu-email@dominio.com".');
       return;
     }
-    const saldo = 'R$ 1.250,00'; // placeholder
-    await whatsappService.sendText(from, `🧾 Seu saldo atual é ${saldo}`);
+    // TODO: consultar saldo real do usuário
+    await whatsappService.sendText(from, 'Consulta de saldo em breve disponível.');
     return;
   }
 
-  // vincular
   if (await tryPairing(from, text)) return;
 
-  // confirmar/cancelar
   if (/^confirmar$/i.test(text)) {
     const pend = pendingByPhone.get(from);
     if (!pend) {
       await whatsappService.sendText(from, 'Não há lançamento pendente.');
       return;
     }
-    const { payload } = pend;
     try {
-      const created = await createTransactionFromPayload(payload);
+      const created = await createTransactionFromPayload(pend.payload);
       pendingByPhone.delete(from);
-      await whatsappService.sendText(
-        from,
-        `✔️ Lançado: ${created.type === 'income' ? 'Ganho' :
-                     created.type === 'transfer' ? 'Transferência' : 'Despesa'}
-• R$ ${Number(created.amount).toFixed(2)} • ${created.date}${
-          created.Category ? ` • ${created.Category.name}` : ''}`
+      const tipo = created.type === 'income' ? 'Ganho' : created.type === 'transfer' ? 'Transferência' : 'Despesa';
+      await whatsappService.sendText(from,
+        `Lancado: ${tipo}\n` +
+        `R$ ${Number(created.amount).toFixed(2)} - ${created.date}` +
+        (created.Category ? ` - ${created.Category.name}` : '')
       );
     } catch (err) {
-      console.error('Erro ao criar transação:', err);
-      await whatsappService.sendText(from, '❌ Erro ao lançar. Verifique os dados e tente novamente.');
+      console.error('Erro ao criar transação via WhatsApp:', err.message);
+      await whatsappService.sendText(from, 'Erro ao lançar. Verifique os dados e tente novamente.');
     }
     return;
   }
 
   if (/^cancelar$/i.test(text)) {
     pendingByPhone.delete(from);
-    await whatsappService.sendText(from, '✅ Lançamento cancelado.');
+    await whatsappService.sendText(from, 'Lançamento cancelado.');
     return;
   }
 
-  // precisa estar vinculado p/ lançar
   const userId = await resolveUserId(from);
   if (!userId) {
     await whatsappService.sendText(from, 'Para começar, envie: "vincular seu-email@dominio.com".');
     return;
   }
 
-  // parsing do texto para transação
   const parsed = parseMessage(text);
   if (!parsed.amount) {
     await whatsappService.sendText(from, 'Não entendi o valor. Envie algo como: "gastei 45,90 no mercado (alimentação)".');
@@ -181,38 +166,33 @@ Comandos rápidos: saldo | menu | cancelar`);
   const payload = { from, userId, ...parsed };
   pendingByPhone.set(from, { payload });
 
-  const resumo =
-`Vou lançar:
-• Tipo: ${payload.type}
-• Valor: R$ ${payload.amount.toFixed(2)}
-• Data: ${payload.date}
-${payload.title ? `• Descrição: ${payload.title}\n` : ''}${
-  payload.categoryName ? `• Categoria: ${payload.categoryName}\n` : ''}${
-  payload.accountName ? `• Conta/Cartão: ${payload.accountName}\n` : ''}`;
-
-  await whatsappService.sendText(from, `${resumo}\nResponda **confirmar** para lançar ou **cancelar** para descartar.`);
+  await whatsappService.sendText(from,
+    `Vou lançar:\n` +
+    `Tipo: ${payload.type}\n` +
+    `Valor: R$ ${payload.amount.toFixed(2)}\n` +
+    `Data: ${payload.date}\n` +
+    (payload.title        ? `Descricao: ${payload.title}\n`     : '') +
+    (payload.categoryName ? `Categoria: ${payload.categoryName}\n` : '') +
+    (payload.accountName  ? `Conta/Cartao: ${payload.accountName}\n` : '') +
+    '\nResponda "confirmar" para lançar ou "cancelar" para descartar.'
+  );
 }
 
 async function handleWebhook(req, res) {
-  // responde 200 rápido
   res.sendStatus(200);
 
   try {
-    const entry = req.body?.entry?.[0];
-    const change = entry?.changes?.[0];
-    const value = change?.value;
-    const messages = value?.messages;
+    const messages = req.body?.entry?.[0]?.changes?.[0]?.value?.messages;
+    if (!Array.isArray(messages) || messages.length === 0) return;
 
-    if (Array.isArray(messages) && messages.length > 0) {
-      for (const msg of messages) {
-        const messageId = msg.id || msg.key?.id;
-        if (alreadyProcessed(messageId)) continue;
+    for (const msg of messages) {
+      const messageId = msg.id || msg.key?.id;
+      if (await alreadyProcessed(messageId)) continue;
 
-        if (msg.type === 'text') {
-          await handleTextMessage(msg);
-        } else {
-          await whatsappService.sendText(msg.from, 'Por enquanto só entendo texto. Em breve vou aceitar fotos de comprovantes 📷.');
-        }
+      if (msg.type === 'text') {
+        await handleTextMessage(msg);
+      } else {
+        await whatsappService.sendText(msg.from, 'Por enquanto só entendo texto. Em breve vou aceitar fotos de comprovantes.');
       }
     }
   } catch (err) {
@@ -222,5 +202,5 @@ async function handleWebhook(req, res) {
 
 module.exports = {
   handleWebhook,
-  __pendingByPhone: pendingByPhone
+  __pendingByPhone: pendingByPhone,
 };

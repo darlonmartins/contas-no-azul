@@ -1,3 +1,14 @@
+/**
+ * middlewares/authenticate.js
+ *
+ * Middleware único de autenticação.
+ * Suporta tokens JWT locais (gerados pelo sistema) e tokens Google ID.
+ *
+ * USO: substitui tanto o antigo authMiddleware.js quanto o authenticate.js anterior.
+ * Todos os arquivos de rotas devem importar apenas este:
+ *   const authenticate = require('../middlewares/authenticate');
+ */
+
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 
@@ -12,40 +23,40 @@ const authenticate = async (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
+  // 1️⃣ Tenta validar como JWT local
   try {
-    let decoded;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Tenta verificar como JWT local
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET || 'segredo');
-
-      if (!decoded || !decoded.id) {
-        throw new Error('Token JWT local inválido (payload incompleto)');
-      }
-
-      req.user = decoded;
-      return next();
-    } catch (err) {
-      // Se falhar, tenta validar como token do Google
-      const ticket = await client.verifyIdToken({
-        idToken: token,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-
-      const payload = ticket.getPayload();
-
-      req.user = {
-        id: payload.sub, // ID do Google
-        name: payload.name,
-        email: payload.email,
-        picture: payload.picture,
-        isGoogleUser: true,
-      };
-
-      return next();
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({ message: 'Token inválido' });
     }
-  } catch (error) {
-    console.error('❌ Erro na verificação do token:', error.message);
+
+    req.user = decoded;
+    return next();
+  } catch (jwtErr) {
+    // JWT local inválido — tenta Google ID token
+  }
+
+  // 2️⃣ Tenta validar como Google ID token
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    req.user = {
+      id: payload.sub,
+      name: payload.name,
+      email: payload.email,
+      picture: payload.picture,
+      isGoogleUser: true,
+    };
+
+    return next();
+  } catch (googleErr) {
+    // Nenhum dos dois formatos funcionou
     return res.status(401).json({ message: 'Token inválido ou expirado' });
   }
 };
