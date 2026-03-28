@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Checa se a coluna parentId já existe na tabela
+
     const [exists] = await queryInterface.sequelize.query(`
       SHOW COLUMNS FROM Categories LIKE 'parentId'
     `);

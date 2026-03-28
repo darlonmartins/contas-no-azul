@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');                 // ← ADICIONADO
+const path = require('path');             // ← ADICIONADO
 
 const app = express();
 
@@ -12,6 +14,13 @@ app.use((req, res, next) => {
   console.log('➡️', req.method, req.originalUrl, 'Auth:', req.headers.authorization || '-');
   next();
 });
+
+// ✅ Cria a pasta de uploads de faturas ANTES das rotas
+const UPLOAD_DIR = path.join(__dirname, 'uploads', 'invoices');
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+app.set('UPLOAD_INVOICES_DIR', UPLOAD_DIR);
+// (opcional) servir arquivos estáticos de uploads em dev:
+app.use('/uploads/invoices', express.static(UPLOAD_DIR));
 
 // Rotas públicas
 const authRoutes = require('./routes/authRoutes');
@@ -38,7 +47,7 @@ const cardRoutes = require('./routes/cardRoutes');
 const accountRoutes = require('./routes/accountRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const incomeRoutes = require('./routes/incomeRoutes');
-const invoiceRoutes = require('./routes/invoiceRoutes');
+const invoiceRoutes = require('./routes/invoiceRoutes'); // usa a pasta criada acima
 const monthlyGoalRoutes = require('./routes/monthlyGoalRoutes');
 
 // WhatsApp (Cloud API)
@@ -56,7 +65,7 @@ app.use('/api/accounts', authenticate, accountRoutes);
 app.use('/api/categories', authenticate, categoryRoutes);
 app.use('/api/pdf', authenticate, pdfRoutes);
 app.use('/api/records', authenticate, incomeRoutes);
-app.use('/api/invoices', authenticate, invoiceRoutes);
+app.use('/api/invoices', authenticate, invoiceRoutes); // ✅ já com dir criado
 app.use('/api/monthly-goals', authenticate, monthlyGoalRoutes);
 
 // WhatsApp rotas (sem auth para facilitar webhook/teste)
@@ -66,11 +75,6 @@ app.use('/api/whatsapp/test', whatsappTestRoutes);
 // Healthcheck simples
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
-// ⬇️ deixe o 404 SEMPRE por último
-app.use((req, res) => {
-  res.status(404).json({ error: 'endpoint desconhecido' });
-});
-
 // Conexão com o banco
 const { sequelize } = require('./models');
 
@@ -79,7 +83,7 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('✅ Conectado ao banco de dados');
 
-    // Se usa migrations, evitar alter aqui em prod; em dev pode manter
+    // Em produção, prefira migrations; em dev, sync ajuda:
     await sequelize.sync();
     console.log('🧠 Tabelas sincronizadas com o banco de dados');
 

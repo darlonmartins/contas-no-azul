@@ -63,6 +63,10 @@ const Trial        = require('./Trial')(sequelize, Sequelize.DataTypes);
 // ✅ Novo: pareamento WhatsApp ↔ usuário (persistido em DB)
 const WhatsappPairing = require('./WhatsappPairing')(sequelize, Sequelize.DataTypes);
 
+// ✅ Novos models de fatura (upload PDF)
+const InvoiceFile       = require('./InvoiceFile')(sequelize, Sequelize.DataTypes);
+const ParsedTransaction = require('./ParsedTransaction')(sequelize, Sequelize.DataTypes);
+
 // =====================
 // Objeto com todos os models
 // =====================
@@ -76,7 +80,9 @@ const models = {
   Invoice,
   MonthlyGoal,
   Trial,
-  WhatsappPairing, // ✅ exporta
+  WhatsappPairing,
+  InvoiceFile,
+  ParsedTransaction,
 };
 
 // =====================
@@ -96,6 +102,20 @@ Transaction.belongsTo(Category, { foreignKey: 'categoryId' });
 
 User.hasMany(Card, { foreignKey: 'userId' });
 Card.belongsTo(User, { foreignKey: 'userId' });
+
+
+User.hasMany(InvoiceFile, { foreignKey: 'userId', onDelete: 'CASCADE' });
+InvoiceFile.belongsTo(User, { foreignKey: 'userId' });
+
+Card.hasMany(InvoiceFile, { foreignKey: 'cardId', onDelete: 'CASCADE' });
+InvoiceFile.belongsTo(Card, { foreignKey: 'cardId' });
+
+User.hasMany(ParsedTransaction, { foreignKey: 'userId', onDelete: 'CASCADE' });
+ParsedTransaction.belongsTo(User, { foreignKey: 'userId' });
+
+InvoiceFile.hasMany(ParsedTransaction, { foreignKey: 'invoiceFileId', onDelete: 'CASCADE' });
+ParsedTransaction.belongsTo(InvoiceFile, { foreignKey: 'invoiceFileId' });
+
 
 User.hasMany(Account, { foreignKey: 'userId' });
 Account.belongsTo(User, { foreignKey: 'userId' });

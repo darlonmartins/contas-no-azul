@@ -2,14 +2,20 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.addColumn('Cards', 'fechamento', {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      defaultValue: 10, // valor inicial padrão
-    });
+    const table = await queryInterface.describeTable('Cards');
+    if (!table.fechamento) {
+      await queryInterface.addColumn('Cards', 'fechamento', {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 10,
+      });
+    }
   },
 
-  down: async (queryInterface, Sequelize) => {
-    await queryInterface.removeColumn('Cards', 'fechamento');
-  }
+  down: async (queryInterface) => {
+    const table = await queryInterface.describeTable('Cards');
+    if (table.fechamento) {
+      await queryInterface.removeColumn('Cards', 'fechamento');
+    }
+  },
 };

@@ -4,10 +4,6 @@ import api from "../services/api";
 import { format, parseISO, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  PlusCircle, ArrowLeft, Calendar, DollarSign,
-  CreditCard, Pencil, Trash2, CheckCircle
-} from "lucide-react";
-import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, LabelList
 } from "recharts";
@@ -18,6 +14,8 @@ import { motion } from 'framer-motion';
 import ConfirmInvoiceModal from "../components/invoices/ConfirmInvoiceModal";
 import PayInvoiceModal from "../components/invoices/PayInvoiceModal";
 import { toast } from 'react-toastify';
+import { PlusCircle, ArrowLeft, Calendar, DollarSign, CreditCard, Pencil, Trash2, CheckCircle, Paperclip } from "lucide-react";
+import AttachInvoiceModal from "../components/invoices/AttachInvoiceModal";
 
 console.log("🧱 CardDetails BUILD vA3");
 
@@ -43,6 +41,7 @@ const CardDetails = () => {
   const [totalFuture, setTotalFuture] = useState(0);
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAttachOpen, setIsAttachOpen] = useState(false);
 
   useEffect(() => { fetchCards(); }, []);
 
@@ -268,6 +267,14 @@ const CardDetails = () => {
           <PlusCircle size={18} />
           Registrar despesa com cartão
         </button>
+
+       <button
+ onClick={() => setIsAttachOpen(true)}
+         className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2 rounded hover:bg-violet-700"
+       >
+         <Paperclip size={18} />
+         Anexar fatura (PDF)
+       </button>
       </div>
 
       {/* Cabeçalho do Cartão */}
@@ -578,6 +585,24 @@ const CardDetails = () => {
           }}
         />
       )}
+{isAttachOpen && (
+  <AttachInvoiceModal
+    open={isAttachOpen}
+    onClose={() => setIsAttachOpen(false)}
+    cardId={Number(selectedCardId)}
+    month={month}
+    onDone={async () => {
+      // recarrega tudo que a página já usa
+      await fetchTransactions();
+      await fetchFutureChart();
+      await fetchFutureInstallments();
+      await loadSelectedCard();
+      await checkOrCreateInvoice();
+      await fetchInvoiceInfo();
+    }}
+  />
+)}
+
     </div>
   );
 };

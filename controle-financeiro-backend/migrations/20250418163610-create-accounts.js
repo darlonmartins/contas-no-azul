@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // Checa e cria installmentNumber
+
     const [installmentExists] = await queryInterface.sequelize.query(`
       SHOW COLUMNS FROM Transactions LIKE 'installmentNumber'
     `);
@@ -13,7 +13,7 @@ module.exports = {
       });
     }
 
-    // Checa e cria isInstallment
+
     const [isInstallmentExists] = await queryInterface.sequelize.query(`
       SHOW COLUMNS FROM Transactions LIKE 'isInstallment'
     `);

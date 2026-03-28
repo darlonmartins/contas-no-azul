@@ -79,3 +79,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
+node_modules
+
+# Uploads (arquivos de usuários / PDFs)
+controle-financeiro-backend/uploads/
