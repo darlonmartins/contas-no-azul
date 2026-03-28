@@ -1,6 +1,3 @@
-const path = require('path');
-console.log('🕵️ authService carregado de:', path.resolve(__dirname, '../services/authService'));
-
 const authService = require('../services/authService');
 const { createAccount } = require('../services/accountService');
 const { createDefaultCategories } = require('../services/categoryService');
