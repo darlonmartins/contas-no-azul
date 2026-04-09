@@ -1,48 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import ObjectiveForm from '../components/goals/ObjectiveForm';
-import ObjectiveList from '../components/goals/ObjectiveList';
-import ConfirmDeleteModal from '../components/ui/ConfirmDeleteModal';
-import { PlusCircle, Target } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { PlusCircle, Target, Pencil, Trash2, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import api from '@/services/api';
+import ObjectiveForm from '../components/goals/ObjectiveForm';
+import ConfirmDeleteModal from '../components/ui/ConfirmDeleteModal';
+
+const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+const ICON_MAP = {
+  'novo carro': '🚗', 'nova casa': '🏠', 'viagem de férias': '✈️',
+  'educação': '🎓', 'fundo de emergência': '💰', 'saúde': '❤️',
+  'festa': '🎉', 'filhos': '👶', 'aposentadoria': '🏖️', 'quitar uma dívida': '💳',
+};
+const getIcon = (name) => ICON_MAP[name?.toLowerCase()?.trim()] || '🎯';
 
 const Objectives = () => {
-  const [objectives, setObjectives] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [objectives, setObjectives]       = useState([]);
+  const [isModalOpen, setIsModalOpen]     = useState(false);
   const [editingObjective, setEditingObjective] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [loading, setLoading] = useState(true);
-
+  const [deleteTarget, setDeleteTarget]   = useState(null);
+  const [loading, setLoading]             = useState(true);
+  const navigate = useNavigate();
 
   const fetchObjectives = async () => {
-  try {
-    setLoading(true);
-    const res = await api.get('/goals');
-    setObjectives(res.data);
-  } catch (err) {
-    console.error('Erro ao buscar objetivos:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      const res = await api.get('/goals');
+      setObjectives(res.data);
+    } catch (err) {
+      console.error('Erro ao buscar objetivos:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => { fetchObjectives(); }, []);
 
-  useEffect(() => {
-    fetchObjectives();
-  }, []);
-  
-  if (loading) {
-  return (
-    <div className="flex flex-col items-center justify-center p-6 text-gray-600 text-sm animate-fade-in">
-      <svg className="animate-spin h-6 w-6 text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a10 10 0 00-10 10h4z" />
-      </svg>
-      <p>Carregando seus objetivos financeiros... aguarde um instante.</p>
-    </div>
-  );
-}
   const handleDelete = async () => {
     try {
       await api.delete(`/goals/${deleteTarget}`);
@@ -53,97 +46,139 @@ const Objectives = () => {
     }
   };
 
-  return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Target className="w-6 h-6 text-indigo-600" />
-          Meus Objetivos Financeiros
-        </h1>
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 64, gap: 12, color: '#94a3b8' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ fontSize: 14 }}>Carregando objetivos...</p>
+      </div>
+    );
+  }
 
-        {/* ✅ Exibir botão somente se já houver objetivos */}
-        {objectives.length > 0 && (
-          <button
-            onClick={() => {
-              setEditingObjective(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition"
-          >
-            <PlusCircle className="w-5 h-5" />
-            Cadastrar novo objetivo
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+        .obj-page { font-family: 'DM Sans', sans-serif; }
+        .obj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+        .obj-btn-primary { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: 9px; border: none; background: #0f172a; color: #fff; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s; }
+        .obj-btn-primary:hover { background: #1e293b; }
+        .obj-card { background: #fff; border: 1.5px solid #f1f5f9; border-radius: 16px; padding: 18px 20px; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
+        .obj-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #e2e8f0; }
+        .obj-action-btn { width: 30px; height: 30px; border-radius: 7px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+      `}</style>
+
+      <div className="obj-page">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', letterSpacing: '-0.4px', margin: '0 0 4px' }}>Objetivos</h1>
+            <p style={{ fontSize: 13, color: '#94a3b8', margin: 0 }}>Acompanhe suas metas financeiras</p>
+          </div>
+          <button className="obj-btn-primary" onClick={() => { setEditingObjective(null); setIsModalOpen(true); }}>
+            <PlusCircle size={16} /> Novo objetivo
           </button>
+        </div>
+
+        {objectives.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '64px 24px', background: '#fff', border: '1.5px solid #f1f5f9', borderRadius: 16 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 26 }}>🎯</div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: '#0f172a', margin: '0 0 6px' }}>Nenhum objetivo cadastrado</h3>
+            <p style={{ fontSize: 14, color: '#94a3b8', margin: '0 0 20px' }}>Defina uma meta financeira e acompanhe seu progresso.</p>
+            <button className="obj-btn-primary" onClick={() => { setEditingObjective(null); setIsModalOpen(true); }}>
+              <PlusCircle size={15} /> Adicionar objetivo
+            </button>
+          </div>
+        ) : (
+          <div className="obj-grid">
+            {objectives.map(obj => {
+              const pct = Math.min(Math.round((obj.currentAmount / (obj.targetAmount || 1)) * 100), 100);
+              const done = obj.currentAmount >= obj.targetAmount;
+              const daysLeft = obj.dueDate ? Math.ceil((new Date(obj.dueDate) - new Date()) / 86400000) : null;
+
+              return (
+                <div key={obj.id} className="obj-card" onClick={() => navigate(`/objectives/${obj.id}`)}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f8fafc', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                        {getIcon(obj.name)}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{obj.name}</div>
+                        {daysLeft !== null && (
+                          <div style={{ fontSize: 11, color: daysLeft < 30 ? '#ef4444' : '#94a3b8', marginTop: 1 }}>
+                            {daysLeft > 0 ? `${daysLeft} dias restantes` : 'Prazo encerrado'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 2 }} onClick={e => e.stopPropagation()}>
+                      <button className="obj-action-btn"
+                        onClick={() => { setEditingObjective(obj); setIsModalOpen(true); }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <Pencil size={14} color="#64748b" />
+                      </button>
+                      <button className="obj-action-btn"
+                        onClick={() => setDeleteTarget(obj.id)}
+                        onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <Trash2 size={14} color="#ef4444" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#94a3b8', marginBottom: 4 }}>
+                      <span>R$ {fmt(obj.currentAmount)}</span>
+                      <span>R$ {fmt(obj.targetAmount)}</span>
+                    </div>
+                    <div style={{ height: 5, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 99, width: `${pct}%`, background: done ? '#22c55e' : '#3b82f6', transition: 'width 0.4s' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 999, background: done ? '#f0fdf4' : '#eff6ff', color: done ? '#16a34a' : '#2563eb' }}>
+                      {done ? 'Concluído ✓' : `${pct}% concluído`}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 3 }}>
+                      Ver detalhes <ArrowRight size={12} />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
-      {objectives.length === 0 ? (
-        <div className="text-center text-gray-600 py-12 flex flex-col items-center">
-          <Target size={48} className="text-indigo-600 mb-4" />
-          <p className="text-xl font-semibold">Nenhum objetivo cadastrado</p>
-          <p className="text-sm text-gray-500 mt-2 mb-4">
-            Comece adicionando uma meta financeira para acompanhar seu progresso.
-          </p>
-          <button
-            onClick={() => {
-              setEditingObjective(null);
-              setIsModalOpen(true);
-            }}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-medium"
-          >
-            Adicionar Objetivo
-          </button>
+      {/* Modal de objetivo */}
+      {isModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(3px)', fontFamily: "'DM Sans', sans-serif" }}>
+          <div style={{ background: '#fff', borderRadius: 18, width: '95%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <h2 style={{ fontSize: 17, fontWeight: 600, color: '#0f172a', margin: '0 0 20px' }}>
+              {editingObjective ? 'Editar objetivo' : 'Novo objetivo'}
+            </h2>
+            <ObjectiveForm
+              initialData={editingObjective}
+              onCancel={() => setIsModalOpen(false)}
+              onObjectiveSaved={() => { setIsModalOpen(false); fetchObjectives(); }}
+            />
+          </div>
         </div>
-      ) : (
-        <ObjectiveList
-          objectives={objectives}
-          onEdit={(obj) => {
-            setEditingObjective(obj);
-            setIsModalOpen(true);
-          }}
-          onDelete={(id) => setDeleteTarget(id)}
-        />
       )}
 
-      <AnimatePresence>
-        {isModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white p-6 rounded-xl shadow-xl w-full max-w-lg"
-            >
-              <ObjectiveForm
-                initialData={editingObjective}
-                onCancel={() => setIsModalOpen(false)}
-                onObjectiveSaved={() => {
-                  setIsModalOpen(false);
-                  fetchObjectives();
-                }}
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {deleteTarget && (
-        <ConfirmDeleteModal
-          isOpen={!!deleteTarget}
-          onClose={() => setDeleteTarget(null)}
-          onConfirm={handleDelete}
-          title="Deseja realmente excluir este objetivo?"
-          message="Esta ação não poderá ser desfeita."
-          confirmText="Excluir"
-        />
-      )}
-    </div>
+      <ConfirmDeleteModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Excluir objetivo"
+        message="Deseja realmente excluir este objetivo? Esta ação não pode ser desfeita."
+        confirmText="Excluir"
+      />
+    </>
   );
-  };
-
+};
 
 export default Objectives;

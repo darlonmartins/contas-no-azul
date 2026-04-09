@@ -2,7 +2,250 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Variáveis de cor ── */
+:root {
+  --bg-page:       #f1f5f9;
+  --bg-card:       #ffffff;
+  --bg-input:      #ffffff;
+  --bg-sidebar:    #0f172a;
+  --bg-topbar:     #ffffff;
+  --bg-hover:      #f8fafc;
+
+  --text-primary:   #0f172a;
+  --text-secondary: #64748b;
+  --text-muted:     #94a3b8;
+  --text-sidebar:   rgba(255,255,255,0.55);
+  --text-sidebar-active: #ffffff;
+
+  --border:         #e2e8f0;
+  --border-focus:   #3b82f6;
+
+  --shadow-card:    0 1px 3px rgba(0,0,0,0.06);
+}
+
+html.dark {
+  --bg-page:       #0f172a;
+  --bg-card:       #1e293b;
+  --bg-input:      #1e293b;
+  --bg-sidebar:    #0a0f1a;
+  --bg-topbar:     #1e293b;
+  --bg-hover:      #283548;
+
+  --text-primary:   #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted:     #64748b;
+  --text-sidebar:   rgba(255,255,255,0.45);
+  --text-sidebar-active: #ffffff;
+
+  --border:         #334155;
+  --border-focus:   #3b82f6;
+
+  --shadow-card:    0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* ── Reset base ── */
+* { box-sizing: border-box; }
+
 body {
-  font-family: 'Inter', sans-serif;
-  background-color: #f9fafb;
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  transition: background 0.2s, color 0.2s;
+}
+
+/* ── Layout ── */
+.layout-root {
+  background: var(--bg-page) !important;
+}
+
+.layout-sidebar {
+  background: var(--bg-sidebar) !important;
+}
+
+.layout-topbar {
+  background: var(--bg-topbar) !important;
+  border-bottom-color: var(--border) !important;
+}
+
+.layout-page-title {
+  color: var(--text-primary) !important;
+}
+
+.layout-greeting {
+  color: var(--text-secondary) !important;
+}
+
+.layout-content {
+  background: var(--bg-page);
+}
+
+/* ── Cards e containers brancos ── */
+html.dark .bg-white,
+html.dark [class*="bg-white"] {
+  background-color: var(--bg-card) !important;
+}
+
+html.dark .bg-gray-50,
+html.dark .bg-gray-100 {
+  background-color: var(--bg-page) !important;
+}
+
+html.dark .bg-gray-200 {
+  background-color: #334155 !important;
+}
+
+/* ── Bordas ── */
+html.dark .border,
+html.dark [class*="border-gray"],
+html.dark [class*="border-slate"] {
+  border-color: var(--border) !important;
+}
+
+/* ── Textos ── */
+html.dark .text-gray-900,
+html.dark .text-slate-900,
+html.dark .text-gray-800,
+html.dark .text-black {
+  color: var(--text-primary) !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-slate-700,
+html.dark .text-slate-600 {
+  color: var(--text-secondary) !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400,
+html.dark .text-slate-400,
+html.dark .text-slate-500 {
+  color: var(--text-muted) !important;
+}
+
+/* ── Inputs e selects ── */
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background: var(--bg-input) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+html.dark input:disabled,
+html.dark select:disabled {
+  background: #283548 !important;
+  color: var(--text-muted) !important;
+}
+
+/* ── Sections das configurações ── */
+html.dark .st-section {
+  background: var(--bg-card) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark .st-section-header {
+  border-bottom-color: var(--border) !important;
+}
+
+html.dark .st-section-title {
+  color: var(--text-primary) !important;
+}
+
+html.dark .st-section-desc {
+  color: var(--text-muted) !important;
+}
+
+html.dark .st-input {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .st-theme-option,
+html.dark .st-freq-option {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+html.dark .st-theme-option:hover,
+html.dark .st-freq-option:hover {
+  background: var(--bg-hover) !important;
+}
+
+html.dark .st-theme-option.active,
+html.dark .st-freq-option.active {
+  background: #1e3a5f !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+}
+
+html.dark .st-btn-outline {
+  background: var(--bg-input) !important;
+  border-color: var(--border) !important;
+  color: var(--text-primary) !important;
+}
+
+html.dark .st-page-title {
+  color: var(--text-primary) !important;
+}
+
+/* ── Tabelas ── */
+html.dark table {
+  background: var(--bg-card) !important;
+}
+
+html.dark th {
+  background: var(--bg-hover) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark td {
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+html.dark tr:hover td {
+  background: var(--bg-hover) !important;
+}
+
+/* ── Modais ── */
+html.dark [class*="modal"],
+html.dark [class*="Modal"],
+html.dark .fixed .bg-white {
+  background: var(--bg-card) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+/* ── Dropdowns e selects ── */
+html.dark select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+/* ── Badges e tags ── */
+html.dark .bg-green-100 { background: rgba(34,197,94,0.15) !important; }
+html.dark .bg-red-100   { background: rgba(239,68,68,0.15) !important; }
+html.dark .bg-blue-100  { background: rgba(59,130,246,0.15) !important; }
+html.dark .bg-yellow-100 { background: rgba(234,179,8,0.15) !important; }
+html.dark .bg-purple-100 { background: rgba(168,85,247,0.15) !important; }
+
+/* ── Scrollbar no dark ── */
+html.dark ::-webkit-scrollbar { width: 6px; height: 6px; }
+html.dark ::-webkit-scrollbar-track { background: var(--bg-page); }
+html.dark ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Transição suave ao trocar tema ── */
+*, *::before, *::after {
+  transition: background-color 0.2s, border-color 0.2s, color 0.15s;
 }

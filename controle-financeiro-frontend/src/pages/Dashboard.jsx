@@ -2,670 +2,480 @@ import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell, LabelList
+  LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts';
 import MonthSelector from '../components/dashboard/MonthSelector';
 import CategorySelectorCompact from '../components/dashboard/CategorySelector.compact';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard } from "lucide-react";
 import {
-  BarChart3,
-  CreditCard,
-  PieChart as PieChartIcon,
-  AlertTriangle,
-  DollarSign,
-  ArrowDown,
-  Repeat2,
-  Wallet,
-  CalendarRange
+  TrendingUp, TrendingDown, CreditCard, Repeat2,
+  Wallet, Target, Download, Plus, ArrowRight,
+  AlertTriangle, AlertCircle, Info,
 } from 'lucide-react';
+
+const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+const fmtShort = (v) => {
+  const n = Number(v || 0);
+  if (n >= 1000) return `R$ ${(n / 1000).toFixed(1)}k`;
+  return `R$ ${n.toFixed(0)}`;
+};
+
+const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899'];
+
+const StatCard = ({ label, value, sub, icon: Icon, iconBg, iconColor, trend, trendLabel }) => (
+  <div style={{
+    background: '#fff', border: '1px solid #f1f5f9', borderRadius: 16,
+    padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 12,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <span style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>{label}</span>
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Icon size={18} color={iconColor} />
+      </div>
+    </div>
+    <div>
+      <div style={{ fontSize: 26, fontWeight: 600, color: '#0f172a', letterSpacing: '-0.5px', lineHeight: 1 }}>
+        R$ {fmt(value)}
+      </div>
+      {sub && <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>{sub}</div>}
+    </div>
+    {trendLabel && (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: trend >= 0 ? '#16a34a' : '#dc2626' }}>
+        {trend >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+        {trendLabel}
+      </div>
+    )}
+  </div>
+);
+
+const SectionTitle = ({ children }) => (
+  <h3 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', letterSpacing: '-0.2px', margin: '0 0 16px' }}>
+    {children}
+  </h3>
+);
+
+const Card = ({ children, style = {} }) => (
+  <div style={{
+    background: '#fff', border: '1px solid #f1f5f9', borderRadius: 16,
+    padding: '22px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', ...style
+  }}>
+    {children}
+  </div>
+);
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px', fontSize: 13, boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
+      <p style={{ fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>{label}</p>
+      {payload.map((p, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#64748b' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color }} />
+          {p.name}: <strong style={{ color: '#0f172a' }}>R$ {fmt(p.value)}</strong>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const [data, setData] = useState(null);
   const [monthFilter, setMonthFilter] = useState(() => dayjs().format('YYYY-MM'));
-  const [categoryFilter, setCategoryFilter] = useState(''); // string OU {id,name}
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
 
-  // ---------- PDF ----------
   const handleDownloadPdf = async () => {
     try {
       const params = new URLSearchParams();
       if (monthFilter) params.set('month', monthFilter);
-      if (typeof categoryFilter === 'object' && categoryFilter?.id) {
-        params.set('categoryId', categoryFilter.id);
-      }
-      const res = await api.get(`/pdf/monthly-report?${params.toString()}`, {
-        responseType: 'blob'
-      });
-      const fileName = `relatorio-${monthFilter || 'atual'}.pdf`;
+      if (typeof categoryFilter === 'object' && categoryFilter?.id) params.set('categoryId', categoryFilter.id);
+      const res = await api.get(`/pdf/monthly-report?${params.toString()}`, { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
+      a.href = url; a.download = `relatorio-${monthFilter || 'atual'}.pdf`; a.click();
       window.URL.revokeObjectURL(url);
-    } catch (e) {
-      console.error('Erro ao baixar PDF', e);
-    }
+    } catch (e) { console.error('Erro ao baixar PDF', e); }
   };
 
-  // ---------- Persistência dos filtros ----------
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('dashFilters') || '{}');
     if (saved.month) setMonthFilter(saved.month);
     if (saved.category) setCategoryFilter(saved.category);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('dashFilters', JSON.stringify({
-      month: monthFilter,
-      category: categoryFilter
-    }));
+    localStorage.setItem('dashFilters', JSON.stringify({ month: monthFilter, category: categoryFilter }));
   }, [monthFilter, categoryFilter]);
 
-  // ---------- Ações rápidas ----------
-  const handleQuickAction = (action) => {
-    const payload = {
-      month: monthFilter,
-      categoryId: typeof categoryFilter === 'object' ? categoryFilter.id : null
-    };
-    if (action === 'expense') {
-      navigate('/registros', { state: { ...payload, preset: 'expense' } });
-    } else if (action === 'income') {
-      navigate('/registros', { state: { ...payload, preset: 'income' } });
-    } else if (action === 'transfer') {
-      navigate('/registros', { state: { ...payload, preset: 'transfer' } });
-    } else if (action === 'pay') {
-      navigate('/cards');
-    }
-  };
-
-  // ---------- Fetch helpers ----------
-  const buildDashboardParams = () => {
-    const params = {};
-    if (monthFilter) params.month = monthFilter;
+  const buildParams = () => {
+    const p = {};
+    if (monthFilter) p.month = monthFilter;
     if (categoryFilter) {
-      if (typeof categoryFilter === 'object' && categoryFilter?.id) {
-        params.categoryId = categoryFilter.id;
-      } else if (typeof categoryFilter === 'string') {
-        params.category = categoryFilter;
-      }
+      if (typeof categoryFilter === 'object' && categoryFilter?.id) p.categoryId = categoryFilter.id;
+      else if (typeof categoryFilter === 'string') p.category = categoryFilter;
     }
-    return params;
+    return p;
   };
 
   const fetchDashboard = async () => {
     try {
-      const response = await api.get('/dashboard', { params: buildDashboardParams() });
-      setData(response.data);
-    } catch (err) {
-      console.error('Erro ao buscar dados do dashboard:', err);
-    }
+      const res = await api.get('/dashboard', { params: buildParams() });
+      setData(res.data);
+    } catch (err) { console.error('Erro ao buscar dashboard:', err); }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get('/categories');
-      setCategories(response.data);
-    } catch (err) {
-      console.error('Erro ao carregar categorias:', err);
-    }
-  };
+  useEffect(() => { fetchDashboard(); api.get('/categories').then(r => setCategories(r.data)).catch(() => {}); }, []);
+  useEffect(() => { fetchDashboard(); }, [monthFilter, categoryFilter]);
 
-  useEffect(() => {
-    fetchDashboard();
-    fetchCategories();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    fetchDashboard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [monthFilter, categoryFilter]);
-
-  // ---------- Loading ----------
   if (!data) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 text-gray-600 text-sm animate-fade-in">
-        <svg className="animate-spin h-6 w-6 text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a10 10 0 00-10 10h4z" />
-        </svg>
-        <p>Carregando informações do Dashboard... aguarde um instante.</p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 64, gap: 12, color: '#94a3b8' }}>
+        <div style={{ width: 36, height: 36, border: '3px solid #e2e8f0', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <p style={{ fontSize: 14 }}>Carregando dashboard...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
-  // ✅ DES ESTRUTURE AQUI, ANTES DO RETURN PRINCIPAL
   const {
-    summary = {},
-    chart = [],
-    trend = [],
+    summary = {}, chart = [], topCategories = [], goals = [],
+    accounts = [], cards = [], monthlyGoals = [],
+    cardSummaryChart = [], incomeExpenseTrend = [], monthlyBalanceTrend = [],
     alerts = [],
-    topCategories = [],
-    goals = [],
-    accounts = [],
-    cards = [],
-    monthlyGoals = [],
-    cardSummaryChart = [],
-    incomeExpenseTrend = [],
-    monthlyBalanceTrend = []
   } = data;
 
-  // Cálculos que dependem de summary/monthlyGoals
   const metaFromMonthlyGoals = monthlyGoals.reduce((acc, g) => acc + (g?.amount || 0), 0);
   const usedFromMonthlyGoals = monthlyGoals.reduce((acc, g) => acc + (g?.usedAmount || 0), 0);
   const meta = metaFromMonthlyGoals > 0 ? metaFromMonthlyGoals : (summary.totalGoals ?? 0);
   const usado = metaFromMonthlyGoals > 0 ? usedFromMonthlyGoals : (summary.totalExpenses ?? 0);
   const percentual = meta > 0 ? Math.round((usado / meta) * 100) : 0;
 
-  // ---------- Header + filtros + botões ----------
+  const alertIcon = { warning: AlertTriangle, danger: AlertCircle, info: Info };
+  const alertColor = { warning: { bg: '#fffbeb', color: '#d97706', border: '#fde68a' }, danger: { bg: '#fef2f2', color: '#dc2626', border: '#fecaca' }, info: { bg: '#eff6ff', color: '#3b82f6', border: '#bfdbfe' } };
+
   return (
-    <div className="p-6">
-      {/* ====== HEADER (título + filtros + atalhos) ====== */}
-      <div className="mb-6 flex items-center gap-3 flex-wrap">
-        <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-800 mr-auto">
-          <LayoutDashboard className="w-6 h-6 text-indigo-600" />
-          Dashboard
-        </h2>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+        .dash { font-family: 'DM Sans', sans-serif; }
+        .dash-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 8px 14px; border-radius: 8px; border: 1.5px solid #e2e8f0;
+          font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif;
+          cursor: pointer; background: #fff; color: #374151;
+          transition: all 0.15s; text-decoration: none;
+        }
+        .dash-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .dash-btn-primary { background: #0f172a; color: #fff; border-color: #0f172a; }
+        .dash-btn-primary:hover { background: #1e293b; }
+        .dash-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+        .dash-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+        .dash-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+        @media (max-width: 900px) {
+          .dash-grid-3, .dash-grid-4 { grid-template-columns: 1fr 1fr; }
+          .dash-grid-2 { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+          .dash-grid-3, .dash-grid-4, .dash-grid-2 { grid-template-columns: 1fr; }
+        }
+      `}</style>
 
-        <MonthSelector
-          value={monthFilter}
-          onChange={setMonthFilter}
-          hideLabel
-          className="!h-9 min-w-[220px]"
-        />
+      <div className="dash">
 
-        <CategorySelectorCompact
-          value={categoryFilter}
-          onChange={setCategoryFilter}
-          categories={categories}
-        />
-
-        <div className="flex items-center gap-2">
-          <button onClick={() => handleQuickAction('expense')} className="h-9 px-3 border rounded text-sm hover:bg-gray-50" title="Registrar despesa">+ Despesa</button>
-          <button onClick={() => handleQuickAction('income')} className="h-9 px-3 border rounded text-sm hover:bg-gray-50" title="Registrar ganho">+ Ganho</button>
-          <button onClick={() => handleQuickAction('transfer')} className="h-9 px-3 border rounded text-sm hover:bg-gray-50" title="Registrar transferência">Transferência</button>
-          <button onClick={() => handleQuickAction('pay')} className="h-9 px-3 border rounded text-sm hover:bg-gray-50" title="Pagar fatura do cartão">Pagar fatura</button>
-          <button onClick={handleDownloadPdf} className="h-9 px-3 border rounded text-sm bg-indigo-600 text-white hover:bg-indigo-700" title="Exportar relatório em PDF">Exportar PDF</button>
-        </div>
-      </div>
-      {/* ====== FIM DO HEADER ====== */}
-
-
-      {/* ====== CARDS SUPERIORES ====== */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {/* Saldo Total */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Saldo Total</h3>
-            <DollarSign className="h-5 w-5 text-green-500" />
+        {/* ── Header ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, flexWrap: 'wrap' }}>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', letterSpacing: '-0.4px', margin: 0 }}>Dashboard</h2>
+            <p style={{ fontSize: 13, color: '#94a3b8', margin: '2px 0 0' }}>
+              {dayjs(monthFilter + '-01').format('MMMM [de] YYYY')}
+            </p>
           </div>
-          <p className="text-2xl font-bold text-gray-800">
-            R$ {(summary.balance ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-          <div className="mt-4">
-            {Array.isArray(accounts) && accounts.map(account => (
-              <div key={account.id} className="flex items-center justify-between mt-2">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                  <span className="text-sm text-gray-600">{account.name}</span>
-                </div>
-                <span className="text-sm font-medium">
-                  R$ {(account.saldoAtual ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            ))}
+          <MonthSelector value={monthFilter} onChange={setMonthFilter} hideLabel className="!h-9 min-w-[200px]" />
+          <CategorySelectorCompact value={categoryFilter} onChange={setCategoryFilter} categories={categories} />
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="dash-btn" onClick={() => navigate('/registros', { state: { preset: 'expense' } })}>
+              <Plus size={13} /> Despesa
+            </button>
+            <button className="dash-btn" onClick={() => navigate('/registros', { state: { preset: 'income' } })}>
+              <Plus size={13} /> Ganho
+            </button>
+            <button className="dash-btn dash-btn-primary" onClick={handleDownloadPdf}>
+              <Download size={13} /> PDF
+            </button>
           </div>
         </div>
 
-        {/* Gastos do Mês x Meta (usa monthlyGoals quando houver) */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Gastos do Mês</h3>
-            <BarChart3 className="h-5 w-5 text-blue-500" />
-          </div>
-          <p className="text-2xl font-bold text-gray-800">
-            R$ {(usado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-          <div className="mt-1 text-xs text-gray-500 flex justify-between">
-            <span>
-              Meta: R$ {meta.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}{metaFromMonthlyGoals > 0 ? ' (Metas Mensais)' : ''}
-            </span>
-            <span>{percentual}% utilizado</span>
-          </div>
-        </div>
-
-        {/* Cartões – agora mostra Disponível (availableLimit) */}
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-700">Cartões de Crédito</h3>
-            <CreditCard className="h-5 w-5 text-purple-500" />
-          </div>
-          <div className="space-y-4">
-            {cards.map(card => {
-              const limit = Number(card.limit || 0);
-              const used = Number(card.used || 0);
-              const available = typeof card.availableLimit === 'number'
-                ? Number(card.availableLimit)
-                : Math.max(limit - used, 0);
-
-              const usage = limit > 0 ? used / limit : 0;
-              const usagePercent = Math.round(usage * 100);
-
+        {/* ── Alertas ── */}
+        {alerts.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+            {alerts.map((alert, i) => {
+              const cfg = alertColor[alert.type] || alertColor.info;
+              const Icon = alertIcon[alert.type] || Info;
               return (
-                <div key={card.id} className="border-b pb-3 last:border-0 last:pb-0">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-700">{card.name}</span>
-                    {card.dueDate && (
-                      <span className="text-sm text-gray-500">
-                        Vence dia {card.dueDate}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between text-sm">
-                    <span className="text-gray-600">
-                      Usado: R$ {used.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} /
-                      R$ {limit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className={`text-xs font-medium px-2 py-1 rounded-full ${usage > 0.8 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
-                      {usagePercent}% usado
-                    </span>
-                  </div>
-
-                  <div className="mt-1 text-xs text-gray-600">
-                    Disponível: <strong>R$ {available.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
-                  </div>
-
-                  <div className="mt-2 h-1.5 bg-gray-200 rounded-full">
-                    <div
-                      className={`h-1.5 rounded-full ${usage > 0.8 ? 'bg-red-500' : 'bg-green-500'}`}
-                      style={{ width: `${usagePercent}%` }}
-                    />
-                  </div>
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '12px 16px', borderRadius: 10,
+                  background: cfg.bg, border: `1px solid ${cfg.border}`,
+                }}>
+                  <Icon size={15} color={cfg.color} style={{ flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: cfg.color, fontWeight: 500 }}>{alert.message}</span>
                 </div>
               );
             })}
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Alertas */}
-      {alerts.length > 0 && (
-        <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-3 flex items-center">
-            <AlertTriangle className="h-5 w-5 mr-2 text-yellow-500" />
-            Alertas Inteligentes
-          </h3>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            {alerts.map((alert, index) => (
-              <div
-                key={index}
-                className={`p-3 border-l-4 ${
-                  alert.type === 'warning' ? 'border-yellow-500 bg-yellow-50'
-                  : alert.type === 'danger' ? 'border-red-500 bg-red-50'
-                  : 'border-blue-500 bg-blue-50'
-                } ${index > 0 ? 'border-t border-gray-200' : ''}`}
-              >
-                <p className={`text-sm ${
-                  alert.type === 'warning' ? 'text-yellow-700'
-                  : alert.type === 'danger' ? 'text-red-700'
-                  : 'text-blue-700'
-                }`}>
-                  {alert.message}
-                </p>
-              </div>
-            ))}
-          </div>
+        {/* ── Cards de resumo ── */}
+        <div className="dash-grid-4">
+          <StatCard label="Ganhos" value={summary.income} icon={TrendingUp} iconBg="#f0fdf4" iconColor="#16a34a" />
+          <StatCard label="Despesas" value={summary.expense} icon={TrendingDown} iconBg="#fef2f2" iconColor="#dc2626" />
+          <StatCard label="Cartão" value={summary.despesa_cartao} icon={CreditCard} iconBg="#f5f3ff" iconColor="#8b5cf6" />
+          <StatCard label="Transferências" value={summary.transfer} icon={Repeat2} iconBg="#eff6ff" iconColor="#3b82f6" />
         </div>
-      )}
 
-      {/* Categorias que mais consomem (barras + pizza) */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-700">Categorias que Mais Consomem</h3>
-          <PieChartIcon className="h-5 w-5 text-indigo-500" />
-        </div>
-        <div className="space-y-4">
-          {topCategories.map((cat, index) => (
-            <div key={index} className="flex items-center">
-              <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: cat.color }} />
-              <span className="text-sm text-gray-600 flex-1">{cat.name}</span>
-              <span className="text-sm font-medium text-gray-700 mr-3">
-                R$ {(cat.value ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
-              <div className="w-24 bg-gray-200 rounded-full h-2">
-                <div
-                  className="h-2 rounded-full"
-                  style={{ width: `${cat.percentage}%`, backgroundColor: cat.color }}
-                />
-              </div>
-              <span className="text-xs text-gray-500 ml-2">{cat.percentage}%</span>
+        {/* ── Saldo + Gastos + Cartões ── */}
+        <div className="dash-grid-3">
+          {/* Saldo */}
+          <Card>
+            <SectionTitle>Saldo em contas</SectionTitle>
+            <div style={{ fontSize: 28, fontWeight: 600, color: '#0f172a', letterSpacing: '-0.5px', marginBottom: 16 }}>
+              R$ {fmt(summary.balance)}
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white p-4 rounded shadow mb-8">
-        <h3 className="text-xl font-bold mb-2">Distribuição das Despesas por Categoria</h3>
-        <p className="text-sm text-gray-500 mb-4">
-          Veja a participação de cada categoria nas suas despesas totais.
-        </p>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={topCategories}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              innerRadius={60}
-              label={({ name, value, percentage }) =>
-                `${name}: R$ ${Number(value || 0).toFixed(2)} (${percentage}%)`
-              }
-              labelLine={false}
-            >
-              {topCategories.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {accounts.map(acc => (
+                <div key={acc.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6' }} />
+                    <span style={{ fontSize: 13, color: '#64748b' }}>{acc.name}</span>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>R$ {fmt(acc.saldoAtual)}</span>
+                </div>
               ))}
-            </Pie>
-            <Tooltip
-              formatter={(value) =>
-                `R$ ${Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
-              }
-            />
-            <Legend verticalAlign="bottom" height={36} />
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+            </div>
+          </Card>
 
-      {/* Gastos mensais com cartões */}
-      <div className="bg-white p-4 rounded shadow mb-8">
-        <h3 className="text-xl font-bold mb-4">Gastos Mensais com Cartões</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={cardSummaryChart}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="mes"
-              tickFormatter={(value) => {
-                const [ano, mes] = value.split("-");
-                return new Date(ano, mes - 1).toLocaleDateString("pt-BR", {
-                  month: "short",
-                  year: "numeric",
-                });
-              }}
-            />
-            <YAxis />
-            <Tooltip
-              content={({ active, payload, label }) => {
-                if (!active || !payload || !payload[0]) return null;
-                const { cardDetails } = payload[0].payload;
-                return (
-                  <div className="bg-white p-3 shadow rounded border text-sm">
-                    <p className="font-semibold text-gray-800 mb-2">
-                      {new Date(label + "-01").toLocaleDateString("pt-BR", {
-                        month: "long",
-                        year: "numeric",
-                      })}
-                    </p>
-                    {cardDetails?.map((entry, idx) => (
-                      <div key={idx} className="flex justify-between">
-                        <span className="text-gray-600">{entry.name}</span>
-                        <span className="font-medium">
-                          R$ {Number(entry.value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-                        </span>
+          {/* Gastos vs Meta */}
+          <Card>
+            <SectionTitle>Gastos do mês</SectionTitle>
+            <div style={{ fontSize: 28, fontWeight: 600, color: '#0f172a', letterSpacing: '-0.5px', marginBottom: 6 }}>
+              R$ {fmt(usado)}
+            </div>
+            <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 14 }}>
+              Meta: R$ {fmt(meta)} · {percentual}% utilizado
+            </div>
+            <div style={{ height: 6, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 99,
+                width: `${Math.min(percentual, 100)}%`,
+                background: percentual > 100 ? '#ef4444' : percentual > 80 ? '#f59e0b' : '#22c55e',
+                transition: 'width 0.4s',
+              }} />
+            </div>
+            {monthlyGoals.length > 0 && (
+              <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {monthlyGoals.slice(0, 3).map(g => {
+                  const pct = Math.min(Math.round(g.percentageUsed || 0), 100);
+                  return (
+                    <div key={g.id}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b', marginBottom: 3 }}>
+                        <span>{g.Category?.name}</span>
+                        <span>{pct}%</span>
                       </div>
-                    ))}
+                      <div style={{ height: 4, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 99, width: `${pct}%`, background: pct > 80 ? '#ef4444' : '#3b82f6' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Cartões */}
+          <Card>
+            <SectionTitle>Cartões de crédito</SectionTitle>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {cards.length === 0 && <p style={{ fontSize: 13, color: '#94a3b8' }}>Nenhum cartão cadastrado.</p>}
+              {cards.map(card => {
+                const limit = Number(card.limit || 0);
+                const used = Number(card.used || 0);
+                const available = typeof card.availableLimit === 'number' ? card.availableLimit : Math.max(limit - used, 0);
+                const pct = limit > 0 ? Math.round((used / limit) * 100) : 0;
+                return (
+                  <div key={card.id}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{card.name}</span>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 999,
+                        background: pct > 80 ? '#fef2f2' : '#f0fdf4',
+                        color: pct > 80 ? '#dc2626' : '#16a34a',
+                      }}>{pct}%</span>
+                    </div>
+                    <div style={{ height: 4, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', marginBottom: 4 }}>
+                      <div style={{ height: '100%', borderRadius: 99, width: `${Math.min(pct, 100)}%`, background: pct > 80 ? '#ef4444' : '#22c55e' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8' }}>
+                      <span>Usado: R$ {fmt(used)}</span>
+                      <span>Disponível: R$ {fmt(available)}</span>
+                    </div>
                   </div>
                 );
-              }}
-            />
-            <Legend />
-            <Bar dataKey="total" fill="#8b5cf6" name="Total gasto com cartões">
-              <LabelList
-                dataKey="total"
-                position="top"
-                formatter={(value) =>
-                  `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
-                }
-              />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Resumo por tipo */}
-      <div className="bg-white p-4 rounded shadow mb-8">
-        <h3 className="text-xl font-bold mb-4">Resumo por Tipo de Transação</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-          <div className="border p-3 rounded-lg flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-full">
-              <DollarSign className="text-green-600 w-5 h-5" />
+              })}
             </div>
-            <div>
-              <p className="text-gray-600">Ganhos</p>
-              <p className="text-green-600 font-bold text-lg">
-                R$ {(summary.income ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-
-          <div className="border p-3 rounded-lg flex items-center gap-3">
-            <div className="p-2 bg-red-100 rounded-full">
-              <ArrowDown className="text-red-600 w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-gray-600">Despesas</p>
-              <p className="text-red-600 font-bold text-lg">
-                R$ {(summary.expense ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-
-          <div className="border p-3 rounded-lg flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-full">
-              <CreditCard className="text-purple-600 w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-gray-600">Cartão</p>
-              <p className="text-purple-600 font-bold text-lg">
-                R$ {(summary.despesa_cartao ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-
-          <div className="border p-3 rounded-lg flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-full">
-              <Repeat2 className="text-blue-600 w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-gray-600">Transferências</p>
-              <p className="text-blue-600 font-bold text-lg">
-                R$ {(summary.transfer ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
+          </Card>
         </div>
-      </div>
 
-      {/* Receitas vs Despesas */}
-      <div className="bg-white p-4 rounded shadow mb-8">
-        <h3 className="text-xl font-bold mb-1">Receitas vs Despesas por Mês</h3>
-        <p className="text-sm text-gray-500 mb-3">
-          Compare o total de receitas e despesas registradas em cada mês.
-        </p>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={incomeExpenseTrend} margin={{ top: 40, right: 20, bottom: 20, left: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="mes"
-              padding={{ left: 20, right: 20 }}
-              tickFormatter={(value) => {
-                const [ano, mes] = value.split("-");
-                return new Date(ano, mes - 1).toLocaleDateString("pt-BR", {
-                  month: "short",
-                  year: "numeric",
-                });
-              }}
-            />
-            <YAxis tickFormatter={(value) => `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`} />
-            <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-            <Legend />
-            <Bar dataKey="receitas" fill="#22c55e" name="Receitas">
-              <LabelList dataKey="receitas" position="top" formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-            </Bar>
-            <Bar dataKey="despesas" fill="#ef4444" name="Despesas">
-              <LabelList dataKey="despesas" position="top" formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
+        {/* ── Gráficos ── */}
+        <div className="dash-grid-2">
+          {/* Receitas vs Despesas */}
+          <Card>
+            <SectionTitle>Receitas vs Despesas</SectionTitle>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={incomeExpenseTrend} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => { const [a, m] = v.split('-'); return new Date(a, m-1).toLocaleDateString('pt-BR', { month: 'short' }); }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={fmtShort} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="receitas" fill="#22c55e" name="Receitas" radius={[4,4,0,0]} />
+                <Bar dataKey="despesas" fill="#ef4444" name="Despesas" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
 
-      {/* Progresso das Metas Mensais */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-700">Progresso das Metas Mensais</h3>
-          <CalendarRange className="h-5 w-5 text-purple-500" />
+          {/* Evolução do saldo */}
+          <Card>
+            <SectionTitle>Evolução do saldo</SectionTitle>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={monthlyBalanceTrend} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => { const [a, m] = v.split('-'); return new Date(a, m-1).toLocaleDateString('pt-BR', { month: 'short' }); }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={fmtShort} />
+                <Tooltip content={<CustomTooltip />} />
+                <Line type="monotone" dataKey="saldo" stroke="#3b82f6" name="Saldo" strokeWidth={2.5} dot={{ r: 3, fill: '#3b82f6' }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </Card>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {monthlyGoals?.length > 0 ? (
-            monthlyGoals.map((goal) => {
-              const percent = Math.min(Math.round(goal.percentageUsed || 0), 999);
-              const used = goal.usedAmount ?? 0;
-              const barColor =
-                percent > 100 ? 'bg-red-500'
-                  : percent > 80 ? 'bg-yellow-500'
-                    : 'bg-green-500';
 
-              return (
-                <div key={goal.id} className="border p-3 rounded-lg">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-medium text-gray-800">{goal.Category?.name}</span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(goal.month + '-01').toLocaleDateString('pt-BR', {
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </span>
+        <div className="dash-grid-2">
+          {/* Categorias - Pizza */}
+          <Card>
+            <SectionTitle>Gastos por categoria</SectionTitle>
+            {topCategories.length === 0
+              ? <p style={{ fontSize: 13, color: '#94a3b8' }}>Nenhuma despesa no período.</p>
+              : <>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={topCategories} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={48}>
+                      {topCategories.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={v => `R$ ${fmt(v)}`} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
+                  {topCategories.map((cat, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: '#64748b', flex: 1 }}>{cat.name}</span>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>R$ {fmt(cat.value)}</span>
+                      <span style={{ fontSize: 11, color: '#94a3b8', minWidth: 32, textAlign: 'right' }}>{cat.percentage}%</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            }
+          </Card>
+
+          {/* Gastos com cartões */}
+          <Card>
+            <SectionTitle>Gastos com cartões</SectionTitle>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={cardSummaryChart} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => { const [a, m] = v.split('-'); return new Date(a, m-1).toLocaleDateString('pt-BR', { month: 'short' }); }} />
+                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={fmtShort} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="total" fill="#8b5cf6" name="Total cartões" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </Card>
+        </div>
+
+        {/* ── Metas mensais ── */}
+        {monthlyGoals.length > 0 && (
+          <Card style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', margin: 0 }}>Metas mensais</h3>
+              <button className="dash-btn" onClick={() => navigate('/metas')} style={{ fontSize: 12, padding: '6px 12px' }}>
+                Ver todas <ArrowRight size={12} />
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+              {monthlyGoals.map(goal => {
+                const pct = Math.min(Math.round(goal.percentageUsed || 0), 100);
+                const over = (goal.percentageUsed || 0) > 100;
+                return (
+                  <div key={goal.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '14px 16px', border: '1px solid #f1f5f9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{goal.Category?.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 999, background: over ? '#fef2f2' : '#f0fdf4', color: over ? '#dc2626' : '#16a34a' }}>
+                        {Math.round(goal.percentageUsed || 0)}%
+                      </span>
+                    </div>
+                    <div style={{ height: 4, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden', marginBottom: 6 }}>
+                      <div style={{ height: '100%', borderRadius: 99, width: `${pct}%`, background: over ? '#ef4444' : pct > 80 ? '#f59e0b' : '#22c55e' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8' }}>
+                      <span>R$ {fmt(goal.usedAmount)}</span>
+                      <span>R$ {fmt(goal.amount)}</span>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-500 mb-1">
-                    Meta: R$ {Number(goal.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                  <div className="h-2 bg-gray-200 rounded-full mb-1">
-                    <div className={`h-2 rounded-full ${barColor}`} style={{ width: `${Math.min(percent, 100)}%` }} />
+                );
+              })}
+            </div>
+          </Card>
+        )}
+
+        {/* ── Objetivos ── */}
+        {goals.length > 0 && (
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', margin: 0 }}>Objetivos financeiros</h3>
+              <button className="dash-btn" onClick={() => navigate('/goals')} style={{ fontSize: 12, padding: '6px 12px' }}>
+                Ver todos <ArrowRight size={12} />
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+              {goals.map((goal, i) => {
+                const pct = Math.min(Math.round((goal.currentAmount / (goal.targetAmount || 1)) * 100), 100);
+                const done = goal.currentAmount >= goal.targetAmount;
+                return (
+                  <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '14px 16px', border: '1px solid #f1f5f9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: '#0f172a' }}>{goal.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 7px', borderRadius: 999, background: done ? '#f0fdf4' : '#eff6ff', color: done ? '#16a34a' : '#2563eb' }}>
+                        {done ? 'Concluído' : `${pct}%`}
+                      </span>
+                    </div>
+                    <div style={{ height: 4, background: '#e2e8f0', borderRadius: 99, overflow: 'hidden', marginBottom: 6 }}>
+                      <div style={{ height: '100%', borderRadius: 99, width: `${pct}%`, background: done ? '#22c55e' : '#3b82f6' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#94a3b8' }}>
+                      <span>R$ {fmt(goal.currentAmount)}</span>
+                      <span>R$ {fmt(goal.targetAmount)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span>Usado: R$ {Number(used).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                    <span>{percent}%</span>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-sm text-gray-500">Nenhuma meta mensal cadastrada para o mês.</p>
-          )}
-        </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
       </div>
-
-      {/* Metas vs Despesas por Categoria */}
-      <div className="bg-white p-4 rounded shadow mb-8">
-        <h3 className="text-xl font-bold mb-4">Metas vs Despesas por Categoria</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={chart} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="categoria" />
-            <YAxis tickFormatter={(value) => `R$ ${value.toLocaleString("pt-BR", { minimumFractionDigits: 0 })}`} />
-            <Tooltip formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-            <Legend />
-            <Bar dataKey="metas" fill="#22c55e" name="Metas">
-              <LabelList dataKey="metas" position="top" formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-            </Bar>
-            <Bar dataKey="despesas" fill="#ef4444" name="Despesas">
-              <LabelList dataKey="despesas" position="top" formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Evolução do Saldo Total nas Contas */}
-      <div className="bg-white p-4 rounded shadow mb-8">
-        <h3 className="text-xl font-bold mb-1">Evolução do Saldo Total nas Contas</h3>
-        <p className="text-sm text-gray-500 mb-3">
-          Visualize o saldo final acumulado de todas as suas contas ao fim de cada mês.
-        </p>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={monthlyBalanceTrend} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="mes"
-              padding={{ left: 20, right: 20 }}
-              tick={{ dy: 14 }}
-              tickFormatter={(value) => {
-                const [ano, mes] = value.split("-");
-                return new Date(ano, mes - 1).toLocaleDateString("pt-BR", {
-                  month: "short",
-                  year: "numeric",
-                });
-              }}
-            />
-            <YAxis
-              domain={['auto', 'auto']}
-              tickFormatter={(value) => `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`}
-            />
-            <Tooltip
-              formatter={(value) => `R$ ${Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`}
-              labelFormatter={(label) => {
-                const [ano, mes] = label.split("-");
-                return new Date(ano, mes - 1).toLocaleDateString("pt-BR", {
-                  month: "long",
-                  year: "numeric",
-                });
-              }}
-            />
-            <Line type="monotone" dataKey="saldo" stroke="#10b981" name="Saldo Total" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Objetivos Financeiros (vitrine) */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-700">Objetivos Financeiros</h3>
-          <Wallet className="h-5 w-5 text-blue-500" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {goals.map((goal, index) => {
-            const percentage = ((goal.currentAmount / (goal.targetAmount || 1)) * 100).toFixed(0);
-            const isCompleted = goal.currentAmount >= goal.targetAmount;
-            const status = isCompleted ? 'Concluído' : 'Em andamento';
-            const statusClass = isCompleted ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800';
-            const barClass = isCompleted ? 'bg-green-500' : 'bg-blue-500';
-
-            return (
-              <div key={index} className="border rounded-lg p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">{goal.name}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${statusClass}`}>{status}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600 mb-1">
-                  <span>R$ {(goal.currentAmount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                  <span>de R$ {(goal.targetAmount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="h-2 bg-gray-200 rounded-full">
-                  <div className={`h-2 rounded-full ${barClass}`} style={{ width: `${percentage}%` }} />
-                </div>
-                <div className="mt-1 text-xs text-gray-500 text-right">{percentage}% concluído</div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    </>
   );
 };
 

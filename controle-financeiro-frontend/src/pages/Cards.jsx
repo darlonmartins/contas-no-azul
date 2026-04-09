@@ -2,42 +2,41 @@ import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import CardModal from "../components/cards/CardModal";
 import toast from "react-hot-toast";
-import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { CreditCard, PlusCircle, Pencil, Trash2, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-import visa from "../assets/visa.png";
+import visa       from "../assets/visa.png";
 import mastercard from "../assets/mastercard.png";
-import elo from "../assets/elo.png";
-import hipercard from "../assets/hipercard.png";
-import amex from "../assets/amex.png";
-import outro from "../assets/outro.png";
+import elo        from "../assets/elo.png";
+import hipercard  from "../assets/hipercard.png";
+import amex       from "../assets/amex.png";
+import outro      from "../assets/outro.png";
 
-const brandLogos = {
-  visa,
-  mastercard,
-  elo,
-  hipercard,
-  amex,
-  outro,
+const brandLogos = { visa, mastercard, elo, hipercard, amex, outro };
+
+const fmt = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const getDaysUntilDue = (dueDay) => {
+  const today = new Date();
+  const due = new Date();
+  due.setDate(dueDay);
+  if (due < today) due.setMonth(due.getMonth() + 1);
+  return Math.ceil((due - today) / (1000 * 60 * 60 * 24));
 };
 
-
 const Cards = () => {
-  const [cards, setCards] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCard, setEditingCard] = useState(null);
+  const [cards, setCards]                     = useState([]);
+  const [isModalOpen, setIsModalOpen]         = useState(false);
+  const [editingCard, setEditingCard]         = useState(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-
+  const [loading, setLoading]                 = useState(true);
   const navigate = useNavigate();
 
   const fetchCards = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/cards/with-available-limit");
-      setCards(response.data);
+      const res = await api.get("/cards/with-available-limit");
+      setCards(res.data);
     } catch (err) {
       console.error("Erro ao carregar cartões:", err);
     } finally {
@@ -49,258 +48,199 @@ const Cards = () => {
     try {
       if (editingCard) {
         await api.put(`/cards/${editingCard.id}`, cardData);
-        toast.success("Cartão atualizado com sucesso!");
+        toast.success("Cartão atualizado!");
       } else {
         await api.post("/cards", cardData);
-        toast.success("Cartão cadastrado com sucesso!");
-
-        setTimeout(() => {
-          fetchCards(); // ⏳ espera antes de atualizar os cartões
-        }, 1000);
+        toast.success("Cartão cadastrado!");
+        setTimeout(fetchCards, 800);
       }
       setEditingCard(null);
     } catch (err) {
       console.error("Erro ao salvar cartão:", err);
-      toast.error("Erro ao salvar cartão");
+      toast.error("Erro ao salvar cartão.");
     }
   };
 
   const handleDelete = async () => {
     try {
       await api.delete(`/cards/${confirmDeleteId}`);
-      toast.success("Cartão excluído com sucesso");
-      fetchCards();
+      toast.success("Cartão excluído.");
       setConfirmDeleteId(null);
-    } catch (err) {
-      console.error("Erro ao excluir cartão:", err);
-      toast.error("Erro ao excluir cartão");
+      fetchCards();
+    } catch {
+      toast.error("Erro ao excluir cartão.");
     }
   };
 
-  const handleCardClick = (id) => {
-    navigate(`/cards/${id}`);
-  };
-
-  const getBarColor = (percent) => {
-    if (percent <= 50) return "bg-green-500";
-    if (percent <= 80) return "bg-yellow-500";
-    return "bg-red-500";
-  };
-
-  const getDaysUntilDue = (dueDay) => {
-    const today = new Date();
-    const dueDate = new Date();
-    dueDate.setDate(dueDay);
-    if (dueDate < today) dueDate.setMonth(dueDate.getMonth() + 1);
-    return Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
-  };
-
-  useEffect(() => {
-    fetchCards();
-  }, []);
+  useEffect(() => { fetchCards(); }, []);
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 text-gray-600 text-sm animate-fade-in">
-        <svg className="animate-spin h-6 w-6 text-indigo-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a10 10 0 00-10 10h4z" />
-        </svg>
-        <p>Carregando informações dos cartões... aguarde um instante.</p>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 64, gap: 12, color: "#94a3b8" }}>
+        <div style={{ width: 36, height: 36, border: "3px solid #e2e8f0", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <p style={{ fontSize: 14 }}>Carregando cartões...</p>
       </div>
     );
   }
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <CreditCard size={24} className="text-blue-600" />
-          Cartões
-        </h2>
+  const CardItem = ({ card }) => {
+    const used        = card.limit - card.availableLimit;
+    const usedPct     = Math.min(100, (used / card.limit) * 100);
+    const daysUntilDue = getDaysUntilDue(card.dueDate);
+    const brandKey    = card.brand?.toLowerCase();
+    const logoSrc     = brandLogos[brandKey] || null;
+    const isUrgent    = daysUntilDue <= 5;
+    const barColor    = usedPct > 80 ? "#ef4444" : usedPct > 50 ? "#f59e0b" : "#22c55e";
 
-        {/* ✅ Exibe o botão apenas se houver cartões */}
-        {cards.length > 0 && (
+    return (
+      <div
+        onClick={() => navigate(`/cards/${card.id}`)}
+        style={{
+          background: "#fff", border: "1.5px solid #f1f5f9", borderRadius: 16,
+          padding: "18px 20px", cursor: "pointer", position: "relative",
+          transition: "box-shadow 0.15s, border-color 0.15s",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.08)"; e.currentTarget.style.borderColor = "#e2e8f0"; }}
+        onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; e.currentTarget.style.borderColor = "#f1f5f9"; }}
+      >
+        {/* Ações */}
+        <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 4 }} onClick={e => e.stopPropagation()}>
           <button
-            onClick={() => {
-              setEditingCard(null);
-              setIsModalOpen(false);
-              setTimeout(() => setIsModalOpen(true), 50);
-            }}
-            className="flex items-center gap-3 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg shadow font-semibold text-sm transition"
+            onClick={() => { setEditingCard(card); setIsModalOpen(true); }}
+            style={{ width: 30, height: 30, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#64748b", transition: "background 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
           >
-            <CreditCard size={20} />
-            Cadastrar Novo Cartão
-            <PlusCircle size={20} strokeWidth={2.5} />
+            <Pencil size={14} />
           </button>
-        )}
+          <button
+            onClick={() => setConfirmDeleteId(card.id)}
+            style={{ width: 30, height: 30, borderRadius: 7, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#ef4444", transition: "background 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+
+        {/* Nome + logo */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, paddingRight: 60 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", letterSpacing: "-0.2px" }}>{card.name}</div>
+            <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>{card.brand}</div>
+          </div>
+          {logoSrc && <img src={logoSrc} alt={card.brand} style={{ height: 22, objectFit: "contain" }} />}
+        </div>
+
+        {/* Limite disponível destaque */}
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: "#94a3b8", fontWeight: 500, marginBottom: 2 }}>DISPONÍVEL</div>
+          <div style={{ fontSize: 22, fontWeight: 600, color: "#0f172a", letterSpacing: "-0.5px" }}>
+            {fmt(card.availableLimit)}
+          </div>
+          <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 2 }}>de {fmt(card.limit)} de limite</div>
+        </div>
+
+        {/* Barra de uso */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ height: 5, background: "#f1f5f9", borderRadius: 99, overflow: "hidden", marginBottom: 4 }}>
+            <div style={{ height: "100%", borderRadius: 99, width: `${usedPct}%`, background: barColor, transition: "width 0.4s" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#94a3b8" }}>
+            <span>Usado: {fmt(used)}</span>
+            <span>{usedPct.toFixed(0)}%</span>
+          </div>
+        </div>
+
+        {/* Vencimento */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: 6, fontSize: 12,
+          color: isUrgent ? "#dc2626" : "#64748b",
+          background: isUrgent ? "#fef2f2" : "#f8fafc",
+          padding: "6px 10px", borderRadius: 8,
+        }}>
+          {isUrgent && <AlertTriangle size={13} />}
+          Vence dia {card.dueDate}
+          {isUrgent && <span style={{ fontWeight: 600 }}>· em {daysUntilDue} dia{daysUntilDue !== 1 ? "s" : ""}</span>}
+        </div>
       </div>
+    );
+  };
 
-      <div>
-        <h3 className="text-lg font-semibold mb-3">Meus Cartões</h3>
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+        .cards-page { font-family: 'DM Sans', sans-serif; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+        .cards-btn-primary { display: inline-flex; align-items: center; gap: 7px; padding: 10px 18px; border-radius: 9px; border: none; background: #0f172a; color: #fff; font-size: 14px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s; }
+        .cards-btn-primary:hover { background: #1e293b; }
+      `}</style>
 
+      <div className="cards-page">
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 600, color: "#0f172a", letterSpacing: "-0.4px", margin: "0 0 4px" }}>Cartões</h1>
+            <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>Gerencie seus cartões de crédito</p>
+          </div>
+          <button className="cards-btn-primary" onClick={() => { setEditingCard(null); setIsModalOpen(true); }}>
+            <PlusCircle size={16} /> Novo cartão
+          </button>
+        </div>
+
+        {/* Lista ou vazio */}
         {cards.length === 0 ? (
-          <div className="text-center text-gray-600 py-12 flex flex-col items-center">
-            <CreditCard size={48} className="text-blue-500 mb-4" />
-            <p className="text-xl font-semibold">Nenhum cartão cadastrado</p>
-            <p className="text-sm text-gray-500 mt-2 mb-4">
-              Você ainda não adicionou nenhum cartão. Clique no botão abaixo para cadastrar.
-            </p>
-            <button
-              onClick={() => {
-                setEditingCard(null);
-                setIsModalOpen(true);
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium"
-            >
-              Adicionar Cartão
+          <div style={{ textAlign: "center", padding: "64px 24px", background: "#fff", border: "1.5px solid #f1f5f9", borderRadius: 16 }}>
+            <div style={{ width: 56, height: 56, borderRadius: 16, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <CreditCard size={26} color="#94a3b8" />
+            </div>
+            <h3 style={{ fontSize: 16, fontWeight: 600, color: "#0f172a", margin: "0 0 6px" }}>Nenhum cartão cadastrado</h3>
+            <p style={{ fontSize: 14, color: "#94a3b8", margin: "0 0 20px" }}>Adicione seu primeiro cartão para controlar seus gastos.</p>
+            <button className="cards-btn-primary" onClick={() => { setEditingCard(null); setIsModalOpen(true); }}>
+              <PlusCircle size={15} /> Adicionar cartão
             </button>
           </div>
         ) : (
-          <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {cards
-              .sort((a, b) => a.dueDate - b.dueDate)
-              .map((card) => {
-                const usedPercent = Math.min(
-                  100,
-                  ((card.limit - card.availableLimit) / card.limit) * 100
-                );
-                const daysUntilDue = getDaysUntilDue(card.dueDate);
-                const brandKey = card.brand?.toLowerCase();
-                const logoSrc = brandLogos[brandKey] || null;
-
-                return (
-                  <li
-                    key={card.id}
-                    className="bg-white p-4 rounded shadow space-y-2 cursor-pointer hover:ring-2 hover:ring-blue-500 transition relative"
-                    onClick={() => handleCardClick(card.id)}
-                  >
-                    <div className="absolute top-2 right-2 flex gap-1 z-10">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingCard(card);
-                          setIsModalOpen(true);
-                        }}
-                        className="bg-yellow-500 hover:bg-yellow-600 text-white p-1 rounded"
-                        title="Editar"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmDeleteId(card.id);
-                        }}
-                        className="bg-red-500 hover:bg-red-600 text-white p-1 rounded"
-                        title="Excluir"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-
-                    <p className="font-bold text-lg">{card.name}</p>
-                    {logoSrc && (
-                      <div className="flex justify-end">
-                        <img
-                          src={logoSrc}
-                          alt={card.brand}
-                          className="h-6"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      </div>
-                    )}
-
-                    <p className="text-sm text-gray-600">
-                      Limite: {Number(card.limit).toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Disponível:{" "}
-                      {Number(card.availableLimit).toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
-                    </p>
-
-                    <div className="w-full bg-gray-200 rounded h-2 overflow-hidden">
-                      <div
-                        className={`${getBarColor(usedPercent)} h-full transition-all`}
-                        style={{ width: `${usedPercent}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-gray-500 text-right">
-                      Uso: {usedPercent.toFixed(0)}%
-                    </p>
-
-                    <p className="text-sm text-gray-600">
-                      Vencimento: dia {card.dueDate}
-                      {daysUntilDue <= 5 && (
-                        <span className="text-red-500 font-semibold ml-2">
-                          (Venc. em {daysUntilDue} dias)
-                        </span>
-                      )}
-                    </p>
-                  </li>
-                );
-              })}
-          </ul>
+          <div className="cards-grid">
+            {[...cards].sort((a, b) => a.dueDate - b.dueDate).map(card => (
+              <CardItem key={card.id} card={card} />
+            ))}
+          </div>
         )}
       </div>
 
       <CardModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingCard(null);
-        }}
+        onClose={() => { setIsModalOpen(false); setEditingCard(null); }}
         onSubmit={handleCreate}
         editingCard={editingCard}
       />
 
-      <AnimatePresence>
-        {confirmDeleteId && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded p-6 w-full max-w-sm text-center space-y-4 shadow-lg"
-            >
-              <Trash2 className="mx-auto text-red-600" size={42} />
-              <h3 className="text-lg font-bold">Confirmar exclusão</h3>
-              <p className="text-gray-600">
-                Deseja realmente excluir este cartão?
-              </p>
-              <div className="flex justify-center gap-4 pt-2">
-                <button
-                  onClick={() => setConfirmDeleteId(null)}
-                  className="px-4 py-2 rounded border text-gray-600 hover:bg-gray-100"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
-                >
-                  Confirmar
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      {/* Modal de confirmação de exclusão */}
+      {confirmDeleteId && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.55)", backdropFilter: "blur(3px)", fontFamily: "'DM Sans', sans-serif" }}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "100%", maxWidth: 380, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+              <Trash2 size={24} color="#ef4444" />
+            </div>
+            <h3 style={{ fontSize: 17, fontWeight: 600, color: "#0f172a", margin: "0 0 8px" }}>Excluir cartão</h3>
+            <p style={{ fontSize: 14, color: "#64748b", margin: "0 0 24px" }}>Deseja realmente excluir este cartão? Esta ação não pode ser desfeita.</p>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setConfirmDeleteId(null)} style={{ flex: 1, padding: 10, borderRadius: 9, border: "1.5px solid #e2e8f0", background: "#fff", color: "#374151", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
+                Cancelar
+              </button>
+              <button onClick={handleDelete} style={{ flex: 1, padding: 10, borderRadius: 9, border: "none", background: "#ef4444", color: "#fff", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
-
-
 
 export default Cards;

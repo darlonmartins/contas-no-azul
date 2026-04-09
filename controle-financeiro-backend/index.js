@@ -80,19 +80,21 @@ const categoryRoutes     = require('./routes/categoryRoutes');
 const incomeRoutes       = require('./routes/incomeRoutes');
 const invoiceRoutes      = require('./routes/invoiceRoutes');
 const monthlyGoalRoutes  = require('./routes/monthlyGoalRoutes');
+const fixedExpenseRoutes = require('./routes/fixedExpenseRoutes');
 
-app.use('/api/transactions',  authenticate, transactionRoutes);
-app.use('/api/goals',         authenticate, objectiveRoutes);
-app.use('/api/notifications', authenticate, notificationRoutes);
-app.use('/api/dashboard',     authenticate, dashboardRoutes);
-app.use('/api/settings',      authenticate, settingsRoutes);
-app.use('/api/cards',         authenticate, cardRoutes);
-app.use('/api/accounts',      authenticate, accountRoutes);
-app.use('/api/categories',    authenticate, categoryRoutes);
-app.use('/api/pdf',           authenticate, pdfRoutes);
-app.use('/api/records',       authenticate, incomeRoutes);
-app.use('/api/invoices',      authenticate, invoiceRoutes);
-app.use('/api/monthly-goals', authenticate, monthlyGoalRoutes);
+app.use('/api/transactions',   authenticate, transactionRoutes);
+app.use('/api/goals',          authenticate, objectiveRoutes);
+app.use('/api/notifications',  authenticate, notificationRoutes);
+app.use('/api/dashboard',      authenticate, dashboardRoutes);
+app.use('/api/settings',       authenticate, settingsRoutes);
+app.use('/api/cards',          authenticate, cardRoutes);
+app.use('/api/accounts',       authenticate, accountRoutes);
+app.use('/api/categories',     authenticate, categoryRoutes);
+app.use('/api/pdf',            authenticate, pdfRoutes);
+app.use('/api/records',        authenticate, incomeRoutes);
+app.use('/api/invoices',       authenticate, invoiceRoutes);
+app.use('/api/monthly-goals',  authenticate, monthlyGoalRoutes);
+app.use('/api/fixed-expenses', authenticate, fixedExpenseRoutes);
 
 // ── WhatsApp (webhook público)
 const whatsappRoutes     = require('./routes/whatsappRoutes');
@@ -112,7 +114,6 @@ const { sequelize } = require('./models');
 
 const startServer = async () => {
   try {
-    // Roda migrations pendentes antes de subir o servidor
     console.log('🔄 Rodando migrations...');
     execSync('npx sequelize-cli db:migrate', { stdio: 'inherit' });
     console.log('✅ Migrations concluídas');

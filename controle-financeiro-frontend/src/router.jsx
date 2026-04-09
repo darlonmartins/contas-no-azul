@@ -18,6 +18,7 @@ import PaymentPage from './pages/PaymentPage';
 import HomePage from './pages/HomePage';
 import ObjectiveDetails from './pages/ObjectiveDetails';
 import Metas from "./pages/MonthlyGoals";
+import FixedExpenses from './pages/FixedExpenses';
 
 import Layout from './components/layout/Layout';
 import { useTrial } from './context/TrialContext';
@@ -25,7 +26,6 @@ import { useTrial } from './context/TrialContext';
 const isAuthenticated = () => {
   return !!(localStorage.getItem('token') || sessionStorage.getItem('token'));
 };
-
 
 const PrivateRoute = ({ children }) => {
   return isAuthenticated() ? children : <Navigate to="/login" />;
@@ -46,7 +46,6 @@ const TrialProtectedRoute = ({ children }) => {
 const AppRouter = () => {
   return (
     <Routes>
-      {/* Rota raiz ajustada corretamente */}
       <Route
         path="/"
         element={isAuthenticated() ? <Navigate to="/registros" /> : <HomePage />}
@@ -56,13 +55,13 @@ const AppRouter = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      {/* Página de pagamento - precisa estar logado, mas não exige trial */}
+      {/* Página de pagamento */}
       <Route path="/payment" element={<PrivateRoute><PaymentPage /></PrivateRoute>} />
 
-      {/* Página fora do layout, mas protegida por trial */}
+      {/* Fora do layout */}
       <Route path="/home" element={<TrialProtectedRoute><Home /></TrialProtectedRoute>} />
 
-      {/* Rotas com layout principal e proteção por trial */}
+      {/* Rotas com layout principal */}
       <Route
         element={
           <TrialProtectedRoute>
@@ -70,18 +69,19 @@ const AppRouter = () => {
           </TrialProtectedRoute>
         }
       >
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/cards" element={<Cards />} />
-        <Route path="/objectives" element={<Objectives />} />
-        <Route path="/objectives/:id" element={<ObjectiveDetails />} />
-        <Route path="/metas" element={<Metas />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/accounts" element={<Accounts />} />
-        <Route path="/registros" element={<Registros />} />
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/cards/:cardId" element={<CardDetails />} />
-        <Route path="/goals" element={<Navigate to="/objectives" />} /> {/* 🔁 Redirecionamento corrigido */}
+        <Route path="/dashboard"          element={<Dashboard />} />
+        <Route path="/cards"              element={<Cards />} />
+        <Route path="/cards/:cardId"      element={<CardDetails />} />
+        <Route path="/objectives"         element={<Objectives />} />
+        <Route path="/objectives/:id"     element={<ObjectiveDetails />} />
+        <Route path="/metas"              element={<Metas />} />
+        <Route path="/notifications"      element={<Notifications />} />
+        <Route path="/settings"           element={<Settings />} />
+        <Route path="/accounts"           element={<Accounts />} />
+        <Route path="/registros"          element={<Registros />} />
+        <Route path="/categories"         element={<Categories />} />
+        <Route path="/fixed-expenses"     element={<FixedExpenses />} />
+        <Route path="/goals"              element={<Navigate to="/objectives" />} />
       </Route>
 
       {/* 404 */}

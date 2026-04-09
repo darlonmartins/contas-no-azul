@@ -5,74 +5,76 @@ import 'dayjs/locale/pt-br';
 
 dayjs.locale('pt-br');
 
+const fmt = (v) => Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
 
 const MonthlyGoalCard = ({ goal, onEdit, onDelete }) => {
-    const formattedMonth = dayjs(goal.month + '-01').format('MMMM [de] YYYY');
+  const pct     = goal.percentageUsed ?? 0;
+  const rounded = Math.min(Math.round(pct), 100);
+  const over    = pct > 100;
+  const warn    = pct > 80;
+  const barColor   = over ? '#ef4444' : warn ? '#f59e0b' : '#22c55e';
+  const badgeBg    = over ? '#fef2f2' : warn ? '#fffbeb' : '#f0fdf4';
+  const badgeColor = over ? '#dc2626' : warn ? '#d97706' : '#16a34a';
+  const status     = over ? 'Meta extrapolada' : warn ? 'Quase no limite' : 'Dentro da meta';
 
-
-    const percentage = goal.percentageUsed ?? 0;
-    const roundedPercent = Math.min(Math.round(percentage), 999);
-
-    let status = 'Dentro da meta';
-    let barClass = 'bg-green-500';
-    let statusClass = 'bg-green-100 text-green-800';
-
-    if (percentage > 100) {
-        status = 'Meta extrapolada';
-        barClass = 'bg-red-500';
-        statusClass = 'bg-red-100 text-red-800';
-    } else if (percentage > 80) {
-        status = 'Quase no limite';
-        barClass = 'bg-yellow-500';
-        statusClass = 'bg-yellow-100 text-yellow-800';
-    }
-
-    return (
-        <div className="border rounded-lg p-4 shadow bg-white flex flex-col gap-2">
-            <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                    {goal.Category?.icon && (
-                        <div className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 text-xl">
-                            <span>{goal.Category.icon}</span>
-                        </div>
-                    )}
-                    <div>
-                        <p className="text-sm text-gray-500">{formattedMonth}</p>
-                        <p className="font-semibold text-gray-800">{goal.Category?.name || 'Categoria'}</p>
-                    </div>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={() => onEdit(goal)} className="text-blue-600 hover:text-blue-800">
-                        <Pencil size={18} />
-                    </button>
-                    <button onClick={() => onDelete(goal.id)} className="text-red-600 hover:text-red-800">
-                        <Trash2 size={18} />
-                    </button>
-                </div>
+  return (
+    <div style={{
+      background: '#fff', border: '1.5px solid #f1f5f9', borderRadius: 16,
+      padding: '18px 20px', fontFamily: "'DM Sans', sans-serif",
+      transition: 'box-shadow 0.15s',
+    }}
+      onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)'}
+      onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f8fafc', border: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>
+            {goal.Category?.icon || '📊'}
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#0f172a' }}>{goal.Category?.name || 'Categoria'}</div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1 }}>
+              {dayjs(goal.month + '-01').format('MMMM [de] YYYY')}
             </div>
-
-            <div className="text-sm text-gray-600">Meta:</div>
-            <div className="text-lg font-bold text-indigo-600">
-                R$ {Number(goal.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-
-            <div className="mt-2 h-2 bg-gray-200 rounded-full w-full">
-                <div
-                    className={`h-2 rounded-full ${barClass}`}
-                    style={{ width: `${Math.min(percentage, 100)}%` }}
-                />
-            </div>
-
-            <div className="flex justify-between text-xs text-gray-600 mt-1">
-                <span>Usado: R$ {Number(goal.usedAmount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                <span>{roundedPercent}%</span>
-            </div>
-
-            <div className={`mt-2 text-xs font-medium inline-block px-2 py-1 rounded-full ${statusClass}`}>
-                {status}
-            </div>
+          </div>
         </div>
-    );
+        <div style={{ display: 'flex', gap: 2 }}>
+          <button
+            onClick={() => onEdit(goal)}
+            style={{ width: 30, height: 30, borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <Pencil size={14} color="#64748b" />
+          </button>
+          <button
+            onClick={() => onDelete(goal.id)}
+            style={{ width: 30, height: 30, borderRadius: 7, border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            <Trash2 size={14} color="#ef4444" />
+          </button>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 22, fontWeight: 600, color: '#0f172a', letterSpacing: '-0.5px', marginBottom: 4 }}>
+        R$ {fmt(goal.amount)}
+      </div>
+      <div style={{ fontSize: 12, color: '#94a3b8', marginBottom: 12 }}>meta mensal</div>
+
+      <div style={{ height: 5, background: '#f1f5f9', borderRadius: 99, overflow: 'hidden', marginBottom: 6 }}>
+        <div style={{ height: '100%', borderRadius: 99, width: `${rounded}%`, background: barColor, transition: 'width 0.4s' }} />
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 12, color: '#64748b' }}>Usado: R$ {fmt(goal.usedAmount)}</span>
+        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: badgeBg, color: badgeColor }}>
+          {status} · {Math.round(pct)}%
+        </span>
+      </div>
+    </div>
+  );
 };
 
 export default MonthlyGoalCard;

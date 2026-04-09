@@ -42,6 +42,10 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    fixedGroupId: {
+  type: DataTypes.STRING(36),
+  allowNull: true,
+},
 
 
     categoryId: {

@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const authMiddleware = require('../middlewares/authMiddleware');
-const userController = require('../controllers/userController');
+const authenticate = require('../middlewares/authenticate');
+const { getUserProfile, updateProfile, updatePassword } = require('../controllers/userController');
 
-// Rota segura para retornar dados do usuário logado
-router.get('/me', authMiddleware, userController.getUserProfile);
+router.get('/me',       authenticate, getUserProfile);
+router.put('/me',       authenticate, updateProfile);
+router.put('/password', authenticate, updatePassword);
 
 module.exports = router;

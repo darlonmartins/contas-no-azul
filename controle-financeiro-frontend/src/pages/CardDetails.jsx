@@ -5,80 +5,74 @@ import { format, parseISO, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid, LabelList
+  ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import TransactionModal from "../components/records/TransactionModal";
 import ConfirmDeleteModal from "../components/ui/ConfirmDeleteModal";
-import InvoiceModal from '../components/invoices/InvoiceModal';
-import { motion } from 'framer-motion';
+import InvoiceModal from "../components/invoices/InvoiceModal";
 import ConfirmInvoiceModal from "../components/invoices/ConfirmInvoiceModal";
 import PayInvoiceModal from "../components/invoices/PayInvoiceModal";
-import { toast } from 'react-toastify';
-import { PlusCircle, ArrowLeft, Calendar, DollarSign, CreditCard, Pencil, Trash2, CheckCircle, Paperclip } from "lucide-react";
 import AttachInvoiceModal from "../components/invoices/AttachInvoiceModal";
+import { toast } from "react-toastify";
+import {
+  PlusCircle, ArrowLeft, Calendar, CreditCard,
+  Pencil, Trash2, CheckCircle2, Paperclip, ListX,
+} from "lucide-react";
 
-console.log("🧱 CardDetails BUILD vA3");
+const fmt = (v) => Number(v || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 10, padding: "10px 14px", fontSize: 13, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
+      <p style={{ fontWeight: 600, color: "#0f172a", marginBottom: 4 }}>{label}</p>
+      <p style={{ color: "#7c3aed" }}>R$ {fmt(payload[0].value)}</p>
+    </div>
+  );
+};
 
 const CardDetails = () => {
   const { cardId } = useParams();
-  const [cards, setCards] = useState([]);
+  const [cards, setCards]                   = useState([]);
   const [selectedCardId, setSelectedCardId] = useState(cardId || "");
-  const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7));
-  const [transactions, setTransactions] = useState([]);
-  const [chartData, setChartData] = useState([]);
-  const [dateRange, setDateRange] = useState(null);
+  const [month, setMonth]                   = useState(() => new Date().toISOString().slice(0, 7));
+  const [transactions, setTransactions]     = useState([]);
+  const [chartData, setChartData]           = useState([]);
+  const [dateRange, setDateRange]           = useState(null);
   const [futureInstallmentsTotal, setFutureInstallmentsTotal] = useState(0);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editTransaction, setEditTransaction] = useState(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [isModalOpen, setIsModalOpen]       = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [totalSpentCard, setTotalSpentCard] = useState(0); // (se não usar, pode remover depois)
-  const [invoice, setInvoice] = useState(null);
-  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
-  const [invoiceInfo, setInvoiceInfo] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [totalSpentCard, setTotalSpentCard] = useState(0);
+  const [invoice, setInvoice]               = useState(null);
+  const [invoiceInfo, setInvoiceInfo]       = useState(null);
   const [isUnmarkModalOpen, setIsUnmarkModalOpen] = useState(false);
-  const [selectedCard, setSelectedCard] = useState({});
-  const [totalFuture, setTotalFuture] = useState(0);
+  const [selectedCard, setSelectedCard]     = useState({});
+  const [totalFuture, setTotalFuture]       = useState(0);
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isAttachOpen, setIsAttachOpen] = useState(false);
+  const [isDeleting, setIsDeleting]         = useState(false);
+  const [isAttachOpen, setIsAttachOpen]     = useState(false);
 
   useEffect(() => { fetchCards(); }, []);
 
   useEffect(() => {
     if (selectedCardId && month) {
-      console.log("🚀 Disparando buscas com", { selectedCardId, month });
       fetchTransactions();
       fetchFutureChart();
-      fetchFutureInstallments();   // ✅ unificado
+      fetchFutureInstallments();
       checkOrCreateInvoice();
       fetchInvoiceInfo();
     }
   }, [selectedCardId, month]);
 
-  // 🔓 Abre modal de pagamento com logs e valor corretos
-  const openPayModal = () => {
-    console.log("🧭 Abrindo PayInvoiceModal...");
-    console.log("📌 invoice:", invoice);
-    console.log("📌 invoiceInfo:", invoiceInfo);
-    console.log("📌 totalSpentMonth (Fatura Atual):", totalSpentMonth);
-    console.log("📌 futureInstallmentsTotal:", futureInstallmentsTotal);
-    setIsPayModalOpen(true);
-  };
-
   useEffect(() => {
-    if (selectedCardId) {
-      fetchFutureInstallments(); // mantém essa chamada isolada
-    }
+    if (selectedCardId) fetchFutureInstallments();
   }, [selectedCardId]);
 
   useEffect(() => {
     if (!selectedCard?.id && cards.length > 0) {
       const updated = cards.find(c => String(c.id) === String(selectedCardId));
-      if (updated) {
-        console.log("🟢 Inicializando selectedCard com dados de cards:", updated);
-        setSelectedCard(updated);
-      }
+      if (updated) setSelectedCard(updated);
     }
   }, [cards, selectedCardId, selectedCard?.id]);
 
@@ -90,23 +84,15 @@ const CardDetails = () => {
       });
       setCards(res.data);
       return res.data;
-    } catch (err) {
-      console.error("Erro ao carregar cartões com limite:", err);
-      return [];
-    }
+    } catch (err) { console.error("Erro ao carregar cartões:", err); return []; }
   };
 
   const loadSelectedCard = async () => {
     try {
-      const cardsAtualizados = await fetchCards();
-      const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
-      if (atualizado) {
-        setSelectedCard(atualizado);
-        console.log("💳 Cartão atualizado após pagamento:", atualizado);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar cartão atualizado:", err);
-    }
+      const updated = await fetchCards();
+      const card = updated.find(c => String(c.id) === String(selectedCardId));
+      if (card) setSelectedCard(card);
+    } catch (err) { console.error("Erro ao atualizar cartão:", err); }
   };
 
   const fetchTransactions = async () => {
@@ -119,74 +105,52 @@ const CardDetails = () => {
           start: format(parseISO(startDate), "dd/MM/yyyy"),
           end: format(subDays(parseISO(endDate), 1), "dd/MM/yyyy"),
         });
-      } else {
-        setDateRange(null);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar transações:", err);
-    }
+      } else { setDateRange(null); }
+    } catch (err) { console.error("Erro ao carregar transações:", err); }
   };
 
   const fetchFutureChart = async () => {
     try {
       const res = await api.get(`/transactions/card/${selectedCardId}/forecast-monthly`);
-      const data = res.data.map(item => ({
+      setChartData(res.data.map(item => ({
         month: format(parseISO(item.month + "-01"), "MMM yyyy", { locale: ptBR }),
         total: parseFloat(item.total),
-      }));
-      setChartData(data);
-    } catch (err) {
-      console.error("Erro ao buscar gráfico futuro:", err);
-    }
+      })));
+    } catch (err) { console.error("Erro ao buscar gráfico:", err); }
   };
 
-  // ✅ ÚNICA FONTE DA VERDADE PARA O FORECAST
   const fetchFutureInstallments = async () => {
     try {
-      console.log("📡 Forecast (único) ->", { cardId: selectedCardId, month });
-      const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, {
-        params: { month }
-      });
+      const res = await api.get(`/transactions/card/${selectedCardId}/forecast`, { params: { month } });
       const total = parseFloat(res.data?.total || 0);
-      setFutureInstallmentsTotal(total); // já usado na UI “Parcelas Futuras”
-      setTotalFuture(total);             // ✅ também atualiza totalFuture (substitui fetchTotalSpentCard)
-    } catch (err) {
-      console.error("Erro ao buscar parcelas/forecast:", err?.response?.data || err);
-    }
+      setFutureInstallmentsTotal(total);
+      setTotalFuture(total);
+    } catch (err) { console.error("Erro ao buscar parcelas:", err); }
   };
 
   const checkOrCreateInvoice = async () => {
     try {
-      console.log("🧾 checkOrCreateInvoice ->", { cardId: selectedCardId, month });
-      const res = await api.post('/invoices/create', { cardId: selectedCardId, month });
+      const res = await api.post("/invoices/create", { cardId: selectedCardId, month });
       setInvoice(res.data.invoice);
-    } catch (err) {
-      console.error('❌ Erro ao criar/verificar fatura:', err);
-    }
+    } catch (err) { console.error("Erro ao criar fatura:", err); }
   };
 
   const fetchInvoiceInfo = async () => {
     try {
-      const res = await api.get('/invoices/invoice-info', {
-        params: { cardId: selectedCardId, month },
-      });
+      const res = await api.get("/invoices/invoice-info", { params: { cardId: selectedCardId, month } });
       setInvoiceInfo(res.data);
-    } catch (err) {
-      console.error("Erro ao carregar informações da fatura:", err);
-    }
+    } catch (err) { console.error("Erro ao carregar info da fatura:", err); }
   };
 
   const handleUnmarkInvoice = async () => {
     try {
       await api.put(`/invoices/${invoice.id}/unpay`);
       await loadSelectedCard();
-      await fetchFutureInstallments();  // ✅ usava fetchTotalSpentCard
+      await fetchFutureInstallments();
       await checkOrCreateInvoice();
       await fetchInvoiceInfo();
       setIsUnmarkModalOpen(false);
-    } catch (err) {
-      console.error("Erro ao desfazer pagamento da fatura:", err);
-    }
+    } catch (err) { console.error("Erro ao desfazer pagamento:", err); }
   };
 
   const handleDelete = async () => {
@@ -195,347 +159,284 @@ const CardDetails = () => {
     try {
       await api.delete(`/transactions/${confirmDeleteId}`);
       toast.success("Transação excluída com sucesso");
-
       setConfirmDeleteId(null);
-      setIsDeleting(false);
-
-      // 🔄 Atualizações em segundo plano
-      fetchTransactions();
-      fetchFutureChart();
-      fetchFutureInstallments();   // ✅ usava fetchTotalSpentCard
-      loadSelectedCard();
-      checkOrCreateInvoice();
-      fetchInvoiceInfo();
+      fetchTransactions(); fetchFutureChart(); fetchFutureInstallments();
+      loadSelectedCard(); checkOrCreateInvoice(); fetchInvoiceInfo();
     } catch (err) {
-      console.error("Erro ao excluir transação:", err);
       toast.error("Erro ao excluir transação");
-      setIsDeleting(false);
-    }
+    } finally { setIsDeleting(false); }
   };
 
-  const cardLimit = selectedCard.limit || 0;
-  const cardAvailable = selectedCard.availableLimit || 0;
-  const totalSpentMonth = transactions.reduce((sum, t) => sum + parseFloat(t.amount || 0), 0);
-  const totalSpentCardReal = transactions.reduce((sum, t) => {
-    return sum + (t.totalInstallments > 1 && t.currentInstallment === 1
-      ? parseFloat(t.amount || 0) * t.totalInstallments
-      : parseFloat(t.amount || 0));
-  }, 0);
-  const usedPercentage = cardLimit > 0 ? Math.round((totalSpentCardReal / cardLimit) * 100) : 0;
+  const cardLimit       = selectedCard.limit || 0;
+  const cardAvailable   = selectedCard.availableLimit || 0;
+  const totalSpentMonth = transactions.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
+  const usedPercentage  = cardLimit > 0 ? Math.round(((cardLimit - cardAvailable) / cardLimit) * 100) : 0;
+  const barColor        = usedPercentage > 80 ? "#ef4444" : usedPercentage > 50 ? "#f59e0b" : "#22c55e";
 
   return (
-    <div className="p-6">
-      {/* navegação */}
-      <div className="mb-6">
-        <Link to="/cards" className="flex items-center text-blue-600">
-          <ArrowLeft className="w-4 h-4 mr-1" />
-          Voltar para Cartões
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap');
+        .cd-page { font-family: 'DM Sans', sans-serif; }
+        .cd-btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 16px; border-radius: 9px; border: none; font-size: 13px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; }
+        .cd-btn-dark { background: #0f172a; color: #fff; }
+        .cd-btn-dark:hover { background: #1e293b; }
+        .cd-btn-purple { background: #7c3aed; color: #fff; }
+        .cd-btn-purple:hover { background: #6d28d9; }
+        .cd-btn-outline { background: #fff; color: #374151; border: 1.5px solid #e2e8f0; }
+        .cd-btn-outline:hover { background: #f8fafc; }
+        .cd-card { background: #fff; border: 1.5px solid #f1f5f9; border-radius: 16px; padding: 20px 22px; margin-bottom: 16px; }
+        .cd-select, .cd-month { padding: 9px 13px; border: 1.5px solid #e2e8f0; border-radius: 9px; font-size: 13px; font-family: 'DM Sans', sans-serif; color: #0f172a; background: #fff; outline: none; transition: border-color 0.15s; }
+        .cd-select:focus, .cd-month:focus { border-color: #3b82f6; }
+        .cd-tx-item { background: #fff; border: 1px solid #f1f5f9; border-radius: 12px; padding: 13px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; transition: box-shadow 0.15s; }
+        .cd-tx-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .cd-action-btn { width: 30px; height: 30px; border-radius: 7px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+        .cd-label { font-size: 11px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+        .cd-section-title { font-size: 15px; font-weight: 600; color: '#0f172a'; letter-spacing: '-0.2px'; margin: '0 0 14px'; }
+      `}</style>
+
+      <div className="cd-page">
+        {/* Voltar */}
+        <Link to="/cards" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, color: "#64748b", textDecoration: "none", marginBottom: 20 }}
+          onMouseEnter={e => e.currentTarget.style.color = "#0f172a"}
+          onMouseLeave={e => e.currentTarget.style.color = "#64748b"}
+        >
+          <ArrowLeft size={15} /> Voltar para Cartões
         </Link>
-      </div>
 
-      <h2 className="text-2xl font-bold mb-6">Fatura do Cartão</h2>
-
-      {/* Filtros */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center mb-6">
-        <select
-          className="border rounded px-3 py-2"
-          value={selectedCardId}
-          onChange={(e) => setSelectedCardId(e.target.value)}
-        >
-          <option value="">Selecione o cartão</option>
-          {cards.map((card) => (
-            <option key={card.id} value={card.id}>
-              {card.name} - {card.brand}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="month"
-          className="border rounded px-3 py-2"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-        />
-
-        <button
-          onClick={() => {
-            setIsModalOpen(true);
-            setEditTransaction(null);
-          }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-        >
-          <PlusCircle size={18} />
-          Registrar despesa com cartão
-        </button>
-
-       <button
- onClick={() => setIsAttachOpen(true)}
-         className="flex items-center gap-2 bg-violet-600 text-white px-4 py-2 rounded hover:bg-violet-700"
-       >
-         <Paperclip size={18} />
-         Anexar fatura (PDF)
-       </button>
-      </div>
-
-      {/* Cabeçalho do Cartão */}
-      {selectedCardId && (
-        <div className="bg-blue-50 p-6 rounded-lg shadow-md mb-6 relative">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <CreditCard className="h-6 w-6 text-blue-500 mr-2" />
-              <h2 className="text-xl font-bold text-gray-800">
-                {selectedCard.name || 'Cartão'}
-              </h2>
-            </div>
-            <div
-              className={`px-3 py-1 rounded-full ${usedPercentage > 80
-                ? 'bg-red-100 text-red-800'
-                : 'bg-green-100 text-green-800'
-                }`}
-            >
-              {usedPercentage}% usado
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <p className="text-sm text-gray-600">Limite Total</p>
-              <p className="text-lg font-semibold">
-                R$ {cardLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Limite Disponível</p>
-              <p className="text-lg font-semibold">
-                R$ {cardAvailable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex items-center">
-              <Calendar className="w-4 h-4 text-gray-500 mr-2" />
-              <div>
-                <p className="text-xs text-gray-500">Fechamento</p>
-                <p className="text-sm font-medium">
-                  {invoiceInfo?.closingDate
-                    ? format(new Date(invoiceInfo.closingDate), "dd/MM/yyyy")
-                    : '-'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center">
-              <Calendar className="w-4 h-4 text-gray-500 mr-2" />
-              <div>
-                <p className="text-xs text-gray-500">Vencimento</p>
-                <p className="text-sm font-medium">
-                  {invoiceInfo?.dueDate
-                    ? format(new Date(invoiceInfo.dueDate), "dd/MM/yyyy")
-                    : '-'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className="h-2 rounded-full mt-4 mb-6"
-            style={{
-              backgroundColor: usedPercentage > 80 ? '#f87171' : '#34d399',
-              width: `${Math.min(usedPercentage, 100)}%`,
-            }}
-          />
-
-          {invoice && (
-            <div className="flex justify-center mt-4">
-              {invoice.paid ? (
-                <div
-                  onClick={() => setIsUnmarkModalOpen(true)}
-                  className="cursor-pointer flex items-center gap-2 px-4 py-2 bg-green-100 text-green-800 rounded shadow text-sm font-semibold hover:bg-green-200 transition"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Fatura paga
-                </div>
-              ) : (
-                <button
-                  onClick={openPayModal}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded shadow-md transition"
-                >
-                  <CheckCircle className="w-4 h-4" />
-                  Marcar Fatura como Paga
-                </button>
-              )}
-            </div>
-          )}
-        </div> // ← ✅ FECHAMENTO CORRETO do <div className="bg-blue-50">
-      )}
-
-      {/* Resumo da Fatura */}
-      {selectedCardId && (
-        <div className="bg-white p-4 rounded-lg shadow mb-6">
-          <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
-            <DollarSign className="h-5 w-5 mr-2 text-green-500" />
-            Resumo da Fatura
-          </h3>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-              <span className="text-gray-600">Fatura Atual</span>
-              <span className="font-semibold">
-                R$ {totalSpentMonth.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
-            </div>
-            <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-              <span className="text-gray-600">Parcelas Futuras</span>
-              <span className="font-semibold">
-                R$ {futureInstallmentsTotal.toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                })}
-              </span>
-            </div>
-            <div className="flex justify-between items-center pt-1">
-              <span className="text-gray-700 font-medium">Total Comprometido</span>
-              <span className="font-bold text-lg">
-                R$ {(totalSpentMonth + futureInstallmentsTotal).toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                })}
-              </span>
-            </div>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 600, color: "#0f172a", letterSpacing: "-0.4px", margin: "0 0 4px" }}>Fatura do Cartão</h1>
+            {dateRange && <p style={{ fontSize: 12, color: "#94a3b8", margin: 0 }}>Período: {dateRange.start} → {dateRange.end}</p>}
           </div>
         </div>
-      )}
 
-      {/* Gráfico de Gastos Futuros */}
-      <div className="mb-8">
-        <h3 className="text-lg font-semibold mb-4 text-gray-800">Previsão de Gastos Futuros</h3>
+        {/* Filtros */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+          <select className="cd-select" value={selectedCardId} onChange={e => setSelectedCardId(e.target.value)}>
+            <option value="">Selecione o cartão</option>
+            {cards.map(c => <option key={c.id} value={c.id}>{c.name} — {c.brand}</option>)}
+          </select>
+          <input className="cd-month" type="month" value={month} onChange={e => setMonth(e.target.value)} />
+          <button className="cd-btn cd-btn-dark" onClick={() => { setIsModalOpen(true); setEditingTransaction(null); }}>
+            <PlusCircle size={15} /> Nova despesa
+          </button>
+          <button className="cd-btn cd-btn-purple" onClick={() => setIsAttachOpen(true)}>
+            <Paperclip size={15} /> Anexar PDF
+          </button>
+        </div>
 
-        {chartData.length === 0 ? (
-          <p className="text-gray-500 text-center py-10">Nenhuma previsão de gastos futuros encontrada.</p>
-        ) : (
+        {selectedCardId && (
           <>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={chartData} margin={{ top: 30, right: 20, left: 0, bottom: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="month"
-                    angle={-45}
-                    textAnchor="end"
-                    interval={0}
-                    tickFormatter={(month) => month.replace('de ', '')}
-                  />
-                  <YAxis />
-                  <Tooltip formatter={(v) => `R$ ${Number(v).toFixed(2)}`} />
-                  <Bar dataKey="total" fill="#3b82f6" radius={[4, 4, 0, 0]}>
-                    <LabelList
-                      dataKey="total"
-                      position="top"
-                      formatter={(v) => `R$ ${Number(v).toFixed(2)}`}
-                    />
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </motion.div>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Previsão de gastos para os próximos 6 meses, considerando também parcelas futuras superiores a este prazo.
-              </p>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Transações da Fatura */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">Transações da Fatura</h3>
-
-        {transactions.length === 0 ? (
-          <p className="text-gray-500">Nenhuma transação encontrada para esse cartão nesse mês.</p>
-        ) : (
-          <>
-            <div className="space-y-4">
-              {transactions.map((t) => (
-                <div key={t.id} className="border rounded-lg p-3 flex justify-between items-center shadow-sm hover:shadow-md transition">
-                  <div>
-                    <p className="font-semibold text-gray-800">{t.title}</p>
-                    <div className="text-xs text-gray-500 flex gap-2 mt-1">
-                      <span>{format(parseISO(t.date), "dd/MM/yyyy")}</span>
-                      {t.Category?.parent && (
-                        <span>• {t.Category.parent.name} &gt; {t.Category.name}</span>
-                      )}
-                      {!t.Category?.parent && t.Category?.name && (
-                        <span>• {t.Category.name}</span>
-                      )}
-                      {t.installmentNumber && t.totalInstallments && (
-                        <span>• {t.installmentNumber}/{t.totalInstallments}</span>
-                      )}
-                    </div>
+            {/* Card info */}
+            <div className="cd-card">
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: "#f5f3ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <CreditCard size={20} color="#7c3aed" />
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        setEditingTransaction(t);
-                        setIsModalOpen(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      <Pencil size={18} />
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteId(t.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                    <div className="text-right font-bold text-gray-800 text-base">
-                      R$ {parseFloat(t.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </div>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: "#0f172a" }}>{selectedCard.name || "Cartão"}</div>
+                    <div style={{ fontSize: 12, color: "#94a3b8" }}>{selectedCard.brand}</div>
                   </div>
                 </div>
-              ))}
+                <span style={{
+                  fontSize: 12, fontWeight: 600, padding: "4px 10px", borderRadius: 999,
+                  background: usedPercentage > 80 ? "#fef2f2" : "#f0fdf4",
+                  color: usedPercentage > 80 ? "#dc2626" : "#16a34a",
+                }}>
+                  {usedPercentage}% usado
+                </span>
+              </div>
+
+              {/* Barra */}
+              <div style={{ height: 5, background: "#f1f5f9", borderRadius: 99, overflow: "hidden", marginBottom: 16 }}>
+                <div style={{ height: "100%", borderRadius: 99, width: `${Math.min(usedPercentage, 100)}%`, background: barColor, transition: "width 0.4s" }} />
+              </div>
+
+              {/* Limites + datas */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 16, marginBottom: 16 }}>
+                <div>
+                  <div className="cd-label">Limite total</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#0f172a" }}>R$ {fmt(cardLimit)}</div>
+                </div>
+                <div>
+                  <div className="cd-label">Disponível</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#16a34a" }}>R$ {fmt(cardAvailable)}</div>
+                </div>
+                {invoiceInfo?.closingDate && (
+                  <div>
+                    <div className="cd-label">Fechamento</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#374151" }}>
+                      <Calendar size={13} color="#94a3b8" />
+                      {format(new Date(invoiceInfo.closingDate), "dd/MM/yyyy")}
+                    </div>
+                  </div>
+                )}
+                {invoiceInfo?.dueDate && (
+                  <div>
+                    <div className="cd-label">Vencimento</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "#374151" }}>
+                      <Calendar size={13} color="#94a3b8" />
+                      {format(new Date(invoiceInfo.dueDate), "dd/MM/yyyy")}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Botão pagar fatura */}
+              {invoice && (
+                <div style={{ display: "flex", justifyContent: "center" }}>
+                  {invoice.paid ? (
+                    <button
+                      onClick={() => setIsUnmarkModalOpen(true)}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 18px", borderRadius: 9, border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#16a34a", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      <CheckCircle2 size={15} /> Fatura paga — clique para desfazer
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setIsPayModalOpen(true)}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 20px", borderRadius: 9, border: "none", background: "#16a34a", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}
+                    >
+                      <CheckCircle2 size={15} /> Marcar fatura como paga
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-between items-center pt-4 mt-6 border-t">
-              <span className="text-gray-700 font-semibold">Total do mês:</span>
-              <span className="text-lg font-bold text-green-700">
-                R$ {totalSpentMonth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </span>
+            {/* Resumo da fatura */}
+            <div className="cd-card">
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Resumo da fatura</h3>
+              <div>
+                {[
+                  { label: "Fatura atual", value: totalSpentMonth },
+                  { label: "Parcelas futuras", value: futureInstallmentsTotal },
+                ].map((row, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f1f5f9" }}>
+                    <span style={{ fontSize: 13, color: "#64748b" }}>{row.label}</span>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#0f172a" }}>R$ {fmt(row.value)}</span>
+                  </div>
+                ))}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>Total comprometido</span>
+                  <span style={{ fontSize: 18, fontWeight: 600, color: "#7c3aed", letterSpacing: "-0.5px" }}>
+                    R$ {fmt(totalSpentMonth + futureInstallmentsTotal)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Gráfico */}
+            <div className="cd-card">
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>Previsão de gastos futuros</h3>
+              {chartData.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "32px 0", color: "#94a3b8", fontSize: 14 }}>
+                  Nenhuma previsão de gastos futuros.
+                </div>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={chartData} margin={{ top: 10, right: 10, bottom: 30, left: -10 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                      <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#94a3b8" }} angle={-30} textAnchor="end" />
+                      <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="total" fill="#7c3aed" radius={[5, 5, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                  <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", marginTop: 8 }}>
+                    Previsão dos próximos 6 meses, incluindo parcelas futuras.
+                  </p>
+                </>
+              )}
+            </div>
+
+            {/* Transações */}
+            <div className="cd-card">
+              <h3 style={{ fontSize: 15, fontWeight: 600, color: "#0f172a", margin: "0 0 16px" }}>
+                Transações da fatura
+                {transactions.length > 0 && (
+                  <span style={{ fontSize: 13, fontWeight: 400, color: "#94a3b8", marginLeft: 8 }}>({transactions.length})</span>
+                )}
+              </h3>
+
+              {transactions.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "32px 0" }}>
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                    <ListX size={22} color="#94a3b8" />
+                  </div>
+                  <p style={{ fontSize: 14, color: "#94a3b8" }}>Nenhuma transação nesse mês.</p>
+                </div>
+              ) : (
+                <>
+                  {transactions.map(t => (
+                    <div key={t.id} className="cd-tx-item">
+                      <div style={{ width: 36, height: 36, borderRadius: 9, background: "#f5f3ff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <CreditCard size={16} color="#7c3aed" />
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: "#0f172a", marginBottom: 2 }}>{t.title}</div>
+                        <div style={{ display: "flex", gap: 8, fontSize: 11, color: "#94a3b8", flexWrap: "wrap" }}>
+                          <span>{format(parseISO(t.date), "dd/MM/yyyy")}</span>
+                          {t.Category && (
+                            <span>{t.Category.parent ? `${t.Category.parent.name} › ` : ""}{t.Category.name}</span>
+                          )}
+                          {t.installmentNumber && t.totalInstallments && (
+                            <span>{t.installmentNumber}/{t.totalInstallments}x</span>
+                          )}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: "#7c3aed", whiteSpace: "nowrap" }}>
+                        R$ {fmt(t.amount)}
+                      </span>
+                      <div style={{ display: "flex", gap: 2 }}>
+                        <button className="cd-action-btn"
+                          onClick={() => { setEditingTransaction(t); setIsModalOpen(true); }}
+                          onMouseEnter={e => e.currentTarget.style.background = "#f1f5f9"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          <Pencil size={14} color="#64748b" />
+                        </button>
+                        <button className="cd-action-btn"
+                          onClick={() => setConfirmDeleteId(t.id)}
+                          onMouseEnter={e => e.currentTarget.style.background = "#fef2f2"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          <Trash2 size={14} color="#ef4444" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 14, marginTop: 6, borderTop: "1px solid #f1f5f9" }}>
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "#64748b" }}>Total do mês</span>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: "#0f172a", letterSpacing: "-0.5px" }}>
+                      R$ {fmt(totalSpentMonth)}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}
       </div>
 
+      {/* Modais */}
       {isModalOpen && (
         <TransactionModal
           isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setEditingTransaction(null);
-          }}
+          onClose={() => { setIsModalOpen(false); setEditingTransaction(null); }}
           transaction={editingTransaction}
           initialType="despesa_cartao"
           defaultCardId={selectedCardId}
           onSave={async () => {
-            await fetchTransactions();
-            await fetchFutureChart();
-            await fetchFutureInstallments(); // ✅ unificado
-            const cardsAtualizados = await fetchCards();
-            const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
-            if (atualizado) setSelectedCard(atualizado);
+            await fetchTransactions(); await fetchFutureChart(); await fetchFutureInstallments();
+            const updated = await fetchCards();
+            const card = updated.find(c => String(c.id) === String(selectedCardId));
+            if (card) setSelectedCard(card);
           }}
-          refresh={() => {
-            fetchTransactions();
-            fetchFutureChart();
-            fetchFutureInstallments(); // ✅ unificado
-          }}
+          refresh={() => { fetchTransactions(); fetchFutureChart(); fetchFutureInstallments(); }}
         />
       )}
 
@@ -563,47 +464,35 @@ const CardDetails = () => {
           isOpen={isPayModalOpen}
           onClose={() => setIsPayModalOpen(false)}
           invoice={invoice}
-          invoiceValue={totalSpentMonth}  // ✅ valor “Fatura Atual” da UI
+          invoiceValue={totalSpentMonth}
           onSuccess={async () => {
             try {
               await new Promise(r => setTimeout(r, 600));
-              const cardsAtualizados = await fetchCards();
-              const atualizado = cardsAtualizados.find(c => String(c.id) === String(selectedCardId));
-              if (atualizado) {
-                console.log("💳 Cartão atualizado após pagamento:", atualizado);
-                setSelectedCard(atualizado);
-              } else {
-                console.warn("⚠️ Cartão não encontrado após pagamento.");
-              }
-              await fetchFutureInstallments(); // ✅ unificado
+              const updated = await fetchCards();
+              const card = updated.find(c => String(c.id) === String(selectedCardId));
+              if (card) setSelectedCard(card);
+              await fetchFutureInstallments();
               await checkOrCreateInvoice();
               await fetchInvoiceInfo();
               toast.success("Fatura marcada como paga!");
-            } catch (err) {
-              console.error("❌ Erro ao atualizar dados após pagamento da fatura:", err);
-            }
+            } catch (err) { console.error("Erro após pagamento:", err); }
           }}
         />
       )}
-{isAttachOpen && (
-  <AttachInvoiceModal
-    open={isAttachOpen}
-    onClose={() => setIsAttachOpen(false)}
-    cardId={Number(selectedCardId)}
-    month={month}
-    onDone={async () => {
-      // recarrega tudo que a página já usa
-      await fetchTransactions();
-      await fetchFutureChart();
-      await fetchFutureInstallments();
-      await loadSelectedCard();
-      await checkOrCreateInvoice();
-      await fetchInvoiceInfo();
-    }}
-  />
-)}
 
-    </div>
+      {isAttachOpen && (
+        <AttachInvoiceModal
+          open={isAttachOpen}
+          onClose={() => setIsAttachOpen(false)}
+          cardId={Number(selectedCardId)}
+          month={month}
+          onDone={async () => {
+            await fetchTransactions(); await fetchFutureChart(); await fetchFutureInstallments();
+            await loadSelectedCard(); await checkOrCreateInvoice(); await fetchInvoiceInfo();
+          }}
+        />
+      )}
+    </>
   );
 };
 
