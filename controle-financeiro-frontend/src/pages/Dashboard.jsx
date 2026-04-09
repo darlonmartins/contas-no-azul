@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../services/api';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell,
+  LineChart, Line, ResponsiveContainer, PieChart, Pie, Cell, LabelList,
 } from 'recharts';
 import MonthSelector from '../components/dashboard/MonthSelector';
 import CategorySelectorCompact from '../components/dashboard/CategorySelector.compact';
@@ -174,6 +174,7 @@ const Dashboard = () => {
         .dash-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
         .dash-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
         .dash-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+        .dash-grid-2 > * { min-width: 0; }
         @media (max-width: 900px) {
           .dash-grid-3, .dash-grid-4 { grid-template-columns: 1fr 1fr; }
           .dash-grid-2 { grid-template-columns: 1fr; }
@@ -361,7 +362,7 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        <div className="dash-grid-2">
+        <div className="dash-grid-2" style={{ overflow: 'hidden' }}>
           {/* Categorias - Pizza */}
           <Card>
             <SectionTitle>Gastos por categoria</SectionTitle>
@@ -391,17 +392,37 @@ const Dashboard = () => {
           </Card>
 
           {/* Gastos com cartões */}
-          <Card>
+          <Card style={{ overflow: 'hidden', minWidth: 0 }}>
             <SectionTitle>Gastos com cartões</SectionTitle>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={cardSummaryChart} margin={{ top: 10, right: 10, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="mes" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={v => { const [a, m] = v.split('-'); return new Date(a, m-1).toLocaleDateString('pt-BR', { month: 'short' }); }} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={fmtShort} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="total" fill="#8b5cf6" name="Total cartões" radius={[4,4,0,0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {cardSummaryChart.length === 0 ? (
+              <p style={{ fontSize: 13, color: '#94a3b8' }}>Nenhum dado disponível.</p>
+            ) : (
+              <div style={{ overflowX: 'auto', overflowY: 'hidden', width: '100%' }}>
+                <BarChart
+                  width={Math.max(cardSummaryChart.length * 72, 300)}
+                  height={260}
+                  data={cardSummaryChart}
+                  margin={{ top: 28, right: 16, bottom: 8, left: 10 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="mes"
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tickFormatter={v => { const [a, m] = v.split('-'); return new Date(a, m-1).toLocaleDateString('pt-BR', { month: 'short' }); }}
+                  />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={fmtShort} width={45} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="total" fill="#8b5cf6" name="Total cartões" radius={[4,4,0,0]}>
+                    <LabelList
+                      dataKey="total"
+                      position="top"
+                      formatter={v => v > 0 ? fmtShort(v) : ''}
+                      style={{ fontSize: 10, fill: '#8b5cf6', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}
+                    />
+                  </Bar>
+                </BarChart>
+              </div>
+            )}
           </Card>
         </div>
 

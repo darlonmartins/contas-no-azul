@@ -1,5 +1,6 @@
 // backend/services/invoiceParseService.js
 const pdfParse = require('pdf-parse');
+const { extractTextFromPdfOCR } = require('./ocrService');
 
 /** Util: primeiros N chars pra log */
 function logHead(tag, text, n = 1200) {
@@ -129,19 +130,96 @@ function parseNubank(text, context = {}) {
   return out;
 }
 
-/** Detecta banco e período (stub simples; ajuste se já tiver lógica própria) */
+/** ====== PARSER INTER (formato: "05 de mar. 2026  DESCRIÇÃO  R$ 19,45") ====== */
+
+const PT_BR_MONTHS_INTER = {
+  jan: '01', fev: '02', mar: '03', abr: '04', mai: '05', jun: '06',
+  jul: '07', ago: '08', set: '09', out: '10', nov: '11', dez: '12',
+};
+
+function parseInter(text, context = {}) {
+  const out = [];
+
+  // Normaliza texto
+  const lines = text.replace(/\r/g, '').split('\n').map(s => s.trim()).filter(Boolean);
+
+  // Regex para linha do Inter: "05 de mar. 2026  DESCRIÇÃO  R$ 19,45"
+  // Ou em uma linha só ou em linhas separadas
+  const rxOneLine = /^(\d{1,2})\s+de\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\.?\s+(\d{4})\s+(.+?)\s+R\$\s*([\d.]+,\d{2})$/i;
+
+  // Também tenta o formato compacto: "05 de mar. 2026ATACADAO 343 ASR$ 19,45"
+  const rxCompact = /(\d{1,2})\s+de\s+(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)\.?\s+(\d{4})\s*([A-Z][^R$\n]+?)\s*R\$\s*([\d.]+,\d{2})/gi;
+
+  // Tenta linha a linha primeiro
+  for (const line of lines) {
+    const m = line.match(rxOneLine);
+    if (m) {
+      const dd   = m[1].padStart(2, '0');
+      const mon  = PT_BR_MONTHS_INTER[m[2].toLowerCase()];
+      const yyyy = m[3];
+      const desc = m[4].replace(/\s+/g, ' ').trim();
+      const cents = parsePtBrMoneyToCents(m[5]);
+
+      if (!mon || !cents || !desc) continue;
+
+      // Ignora linhas de pagamento/crédito (valores positivos indicam crédito)
+      if (line.includes('PAGAMENTO') && !line.includes('PARCELAMENTO')) continue;
+
+      out.push({
+        date: `${yyyy}-${mon}-${dd}`,
+        description: desc,
+        amountCents: cents,
+        ...extractInstallments(desc),
+        raw: line,
+      });
+    }
+  }
+
+  if (out.length) return out;
+
+  // Fallback: tenta regex no texto completo (para PDFs com quebras estranhas)
+  let m2;
+  while ((m2 = rxCompact.exec(text)) !== null) {
+    const dd   = String(m2[1]).padStart(2, '0');
+    const mon  = PT_BR_MONTHS_INTER[m2[2].toLowerCase()];
+    const yyyy = m2[3];
+    const desc = (m2[4] || '').replace(/\s+/g, ' ').trim();
+    const cents = parsePtBrMoneyToCents(m2[5]);
+
+    if (!mon || !cents || !desc) continue;
+    if (/PAGAMENTO/i.test(desc) && !/PARCELAMENTO/i.test(desc)) continue;
+
+    out.push({
+      date: `${yyyy}-${mon}-${dd}`,
+      description: desc,
+      amountCents: cents,
+      ...extractInstallments(desc),
+      raw: m2[0].replace(/\n/g, ' ').trim(),
+    });
+  }
+
+  return out;
+}
+
+
 async function detectBankAndPeriod(buffer, filename) {
   const parsed = await pdfParse(buffer);
-  const text = (parsed.text || '').toUpperCase();
+  const text    = (parsed.text || '').toUpperCase();
+  const textRaw = parsed.text || '';
 
   let bank = null;
   if (text.includes('NUBANK')) bank = 'NUBANK';
+  if (!bank && (text.includes('BANCO INTER') || text.includes('BANCOINTER') || text.includes('INTER.CO') || /\bINTER\b/.test(text))) bank = 'INTER';
 
-  // statementMonth com base no “FATURA 17 OUT 2025” (se tiver)
+  // statementMonth Nubank: FATURA 17 OUT 2025
   let statementMonth = null;
   const m = text.match(/FATURA\s+\d{1,2}\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+(\d{4})/);
-  if (m && PT_BR_MONTHS[m[1]]) {
-    statementMonth = `${m[2]}-${PT_BR_MONTHS[m[1]]}`;
+  if (m && PT_BR_MONTHS[m[1]]) statementMonth = m[2] + '-' + PT_BR_MONTHS[m[1]];
+
+  // statementMonth Inter: VENCIMENTO 12/04/2026
+  if (!statementMonth) {
+    const mi = textRaw.match(/VENCIMENTO\s+(\d{2})\/(\d{2})\/(\d{4})/i);
+    if (mi) statementMonth = mi[3] + '-' + mi[2].padStart(2, '0');
   }
 
   // closingDate/dueDate
@@ -149,7 +227,7 @@ async function detectBankAndPeriod(buffer, filename) {
   const due = text.match(/VENCIMENTO:\s*\d{1,2}\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+(\d{4})/);
   if (due && PT_BR_MONTHS[due[1]]) {
     const dd = text.match(/VENCIMENTO:\s*(\d{1,2})/i)?.[1] || '01';
-    dueDate = `${due[2]}-${PT_BR_MONTHS[due[1]]}-${dd.padStart(2,'0')}`;
+    dueDate = due[2] + '-' + PT_BR_MONTHS[due[1]] + '-' + dd.padStart(2,'0');
   }
 
   return { bank, statementMonth, closingDate, dueDate };
@@ -158,16 +236,32 @@ async function detectBankAndPeriod(buffer, filename) {
 /** Roteador principal */
 async function parsePdfToLines(buffer, bank, extra = {}) {
   const parsed = await pdfParse(buffer);
-  const text = (parsed.text || '').replace(/\r/g, '');
+  let text = (parsed.text || '').replace(/\r/g, '');
 
   const bankNorm = String(bank || '').toUpperCase().trim();
+
+  // Se pdf-parse não extraiu texto suficiente, usa OCR
+  const MIN_CHARS = 100;
+  if (text.replace(/\s/g, '').length < MIN_CHARS) {
+    console.log('🔍 [parsePdfToLines] texto insuficiente (' + text.length + ' chars), tentando OCR...');
+    try {
+      text = await extractTextFromPdfOCR(buffer);
+      console.log('✅ [parsePdfToLines] OCR retornou ' + text.length + ' chars');
+    } catch (ocrErr) {
+      console.error('❌ [parsePdfToLines] OCR falhou:', ocrErr.message);
+    }
+  }
 
   let lines = [];
   if (bankNorm === 'NUBANK') {
     lines = parseNubank(text, { statementMonth: extra.statementMonth });
+  } else if (bankNorm === 'INTER') {
+    lines = parseInter(text, { statementMonth: extra.statementMonth });
   } else {
-    // fallback simples
-    lines = parseNubank(text, { statementMonth: extra.statementMonth });
+    // fallback: tenta ambos e usa o que retornar mais resultados
+    const n = parseNubank(text, { statementMonth: extra.statementMonth });
+    const i = parseInter(text, { statementMonth: extra.statementMonth });
+    lines = n.length >= i.length ? n : i;
   }
 
   if (!lines.length) {

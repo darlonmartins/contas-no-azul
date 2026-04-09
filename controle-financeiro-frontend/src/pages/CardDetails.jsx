@@ -5,7 +5,7 @@ import { format, parseISO, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
-  ResponsiveContainer, CartesianGrid,
+  ResponsiveContainer, CartesianGrid, LabelList,
 } from "recharts";
 import TransactionModal from "../components/records/TransactionModal";
 import ConfirmDeleteModal from "../components/ui/ConfirmDeleteModal";
@@ -338,13 +338,20 @@ const CardDetails = () => {
                 </div>
               ) : (
                 <>
-                  <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={chartData} margin={{ top: 10, right: 10, bottom: 30, left: -10 }}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={chartData} margin={{ top: 30, right: 10, bottom: 30, left: -10 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                       <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#94a3b8" }} angle={-30} textAnchor="end" />
                       <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="total" fill="#7c3aed" radius={[5, 5, 0, 0]} />
+                      <Bar dataKey="total" fill="#7c3aed" radius={[5, 5, 0, 0]}>
+                        <LabelList
+                          dataKey="total"
+                          position="top"
+                          formatter={v => `R$ ${fmt(v)}`}
+                          style={{ fontSize: 11, fill: "#7c3aed", fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}
+                        />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                   <p style={{ fontSize: 12, color: "#94a3b8", textAlign: "center", marginTop: 8 }}>
@@ -379,13 +386,13 @@ const CardDetails = () => {
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 14, fontWeight: 500, color: "#0f172a", marginBottom: 2 }}>{t.title}</div>
-                        <div style={{ display: "flex", gap: 8, fontSize: 11, color: "#94a3b8", flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", gap: 6, fontSize: 12, color: "#64748b", flexWrap: "wrap", alignItems: "center", marginTop: 2 }}>
                           <span>{format(parseISO(t.date), "dd/MM/yyyy")}</span>
                           {t.Category && (
-                            <span>{t.Category.parent ? `${t.Category.parent.name} › ` : ""}{t.Category.name}</span>
+                            <><span style={{ color: "#cbd5e1" }}>·</span><span>{t.Category.parent ? `${t.Category.parent.name} › ` : ""}{t.Category.name}</span></>
                           )}
                           {t.installmentNumber && t.totalInstallments && (
-                            <span>{t.installmentNumber}/{t.totalInstallments}x</span>
+                            <><span style={{ color: "#cbd5e1" }}>·</span><span>{t.installmentNumber}/{t.totalInstallments}x</span></>
                           )}
                         </div>
                       </div>
