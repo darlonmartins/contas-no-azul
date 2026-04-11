@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import api from "../services/api";
 import CardModal from "../components/cards/CardModal";
 import toast from "react-hot-toast";
-import { CreditCard, PlusCircle, Pencil, Trash2, AlertTriangle } from "lucide-react";
+import { CreditCard, PlusCircle, Pencil, Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import visa       from "../assets/visa.png";
@@ -154,17 +154,29 @@ const Cards = () => {
           </div>
         </div>
 
-        {/* Vencimento */}
-        <div style={{
-          display: "flex", alignItems: "center", gap: 6, fontSize: 12,
-          color: isUrgent ? "#dc2626" : "#64748b",
-          background: isUrgent ? "#fef2f2" : "#f8fafc",
-          padding: "6px 10px", borderRadius: 8,
-        }}>
-          {isUrgent && <AlertTriangle size={13} />}
-          Vence dia {card.dueDate}
-          {isUrgent && <span style={{ fontWeight: 600 }}>· em {daysUntilDue} dia{daysUntilDue !== 1 ? "s" : ""}</span>}
-        </div>
+        {/* Vencimento ou fatura paga */}
+        {card.invoicePaid ? (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6, fontSize: 12,
+            color: "#16a34a", background: "#f0fdf4",
+            padding: "6px 10px", borderRadius: 8,
+            border: "1px solid #bbf7d0",
+          }}>
+            <CheckCircle2 size={13} />
+            Fatura paga
+          </div>
+        ) : (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 6, fontSize: 12,
+            color: isUrgent ? "#dc2626" : "#64748b",
+            background: isUrgent ? "#fef2f2" : "#f8fafc",
+            padding: "6px 10px", borderRadius: 8,
+          }}>
+            {isUrgent && <AlertTriangle size={13} />}
+            Vence dia {card.dueDate}
+            {isUrgent && <span style={{ fontWeight: 600 }}>· em {daysUntilDue} dia{daysUntilDue !== 1 ? "s" : ""}</span>}
+          </div>
+        )}
       </div>
     );
   };

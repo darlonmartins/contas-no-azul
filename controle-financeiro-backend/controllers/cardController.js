@@ -1,4 +1,4 @@
-const { Card, Transaction } = require('../models');
+const { Card, Transaction, Invoice } = require('../models');
 const { Op } = require('sequelize');
 const dayjs = require('dayjs');
 
@@ -72,10 +72,30 @@ const cardController = {
   async getCardsWithAvailableLimit(req, res) {
     try {
       const userId = req.user.id;
+      const currentMonth = dayjs().format('YYYY-MM');
 
       const cards = await Card.findAll({
         where: { userId },
         attributes: ['id', 'name', 'brand', 'limit', 'availableLimit', 'dueDate', 'fechamento']
+      });
+
+      // Busca faturas do mês atual — prioriza paid=true quando há duplicatas
+      const invoices = await Invoice.findAll({
+        where: {
+          userId,
+          cardId: { [Op.in]: cards.map(c => c.id) },
+          month: currentMonth,
+        },
+        attributes: ['cardId', 'paid'],
+        order: [['paid', 'DESC']], // paid=true vem primeiro
+      });
+
+      const invoiceMap = {};
+      invoices.forEach(inv => {
+        // Só sobrescreve se ainda não tiver ou se essa for paid=true
+        if (!invoiceMap[inv.cardId] || inv.paid) {
+          invoiceMap[inv.cardId] = inv.paid;
+        }
       });
 
       const result = cards.map((card) => ({
@@ -85,7 +105,8 @@ const cardController = {
         limit: parseFloat(card.limit),
         availableLimit: parseFloat(card.availableLimit),
         dueDate: card.dueDate,
-        fechamento: card.fechamento
+        fechamento: card.fechamento,
+        invoicePaid: invoiceMap[card.id] === true,
       }));
 
       res.json(result);
